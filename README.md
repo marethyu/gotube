@@ -14,11 +14,17 @@ go build gotube
 
 ## Example Commands
 
-gotube https://www.youtube.com/watch?v=vUOHGL4Iv34 \<download directory\>
+```markdown
+gotube https://www.youtube.com/watch?v=vUOHGL4Iv34 <download directory>
+```
 
-gotube https://www.youtube.com/watch?v=wJMkvlTAzHc \<download directory\> -v
+```markdown
+gotube https://www.youtube.com/watch?v=wJMkvlTAzHc <download directory> -v
+```
 
-gotube https://www.youtube.com/watch?v=Hh_HyNfyOKs \<download directory\>
+```markdown
+gotube https://www.youtube.com/watch?v=Hh_HyNfyOKs <download directory>
+```
 
 Replace \<download directory\> your download directory (ex. C:\users\marethyu\documents\poo)
 
