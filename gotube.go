@@ -302,7 +302,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, isVerbose bool) {
 func main() {
     args := os.Args[1:]
     
-    if len(args) != 2 || len(args) != 3 {
+    if len(args) < 2 {
         fmt.Println("Usage: gotube yt-url outdir [-v]\n")
         fmt.Println("yt-url: URL of a YouTube video you want to download (ex. https://www.youtube.com/watch?v=GNMqJS61NT0)")
         fmt.Println("outdir: Directory where you want the video to be saved (ex. C:\\Users\\Jimmy Yang\\Bullshit)\n")
