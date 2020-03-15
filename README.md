@@ -9,7 +9,7 @@ A simple command line tool implemented with Go for downloading YouTube videos.
 If you don't have Go installed yet, download [here](https://golang.org/dl/). Clone this repository and go to the repository directory.
 Then run the following command:
 ```markdown
-go build gotube
+go build gotube.go
 ```
 
 ## Example Commands
