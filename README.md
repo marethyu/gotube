@@ -6,7 +6,11 @@
 
 This repository contains a single-file implementation of YouTube video downloader written in Go. It does not require any third-party packages, only built-in packages from the standard library. The code is compact and easily-readable.
 
-## Build Instructions
+## Installation
+
+You can fetch one of the executable binaries (preferably latest one) from Releases. Unfortunately the binaries only support Windows x86-64 platform this time. However you can help me to make and upload more binaries for different platforms.
+
+### From Source
 
 If you don't have Go installed yet, download [here](https://golang.org/dl/). Clone this repository and go to the repository directory.
 Then run the following command:
