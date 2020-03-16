@@ -222,7 +222,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, isVerbose bool) {
     }
     
     id, _ := GetVideoID(videoURL)
-    u := "https://www.youtube.com/get_video_info?video_id=" + id + "&cpn=CouQulsSRICzWn5E&eurl&el=adunit"
+    u := "https://www.youtube.com/get_video_info?video_id=" + id
     
     if isVerbose {
         fmt.Printf("GoTube: Making a HTTP GET request to %s...\n", u)
