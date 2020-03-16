@@ -36,6 +36,7 @@ package main
 
 import (
     "encoding/json"
+    "flag"
     "fmt"
     "io"
     "io/ioutil"
@@ -225,7 +226,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose bool) {
     u := "https://www.youtube.com/get_video_info?video_id=" + id
     
     if verbose {
-        fmt.Printf("GoTube: Making a HTTP GET request to %s...\n", u)
+        fmt.Printf("GoTube: Making a HTTP GET request thru %s...\n", u)
     }
     
     resp, _ := http.Get(u)
@@ -280,7 +281,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose bool) {
     request.Header.Set("Content-Transfer-Encoding", "binary")
     
     if verbose {
-        fmt.Printf("GoTube: Making another HTTP GET Request to %s...\n", downloadURL)
+        fmt.Printf("GoTube: Making another HTTP GET Request thru %s...\n", downloadURL)
     }
     
     resp, _ = client.Do(request)
@@ -300,19 +301,24 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose bool) {
 }
 
 func main() {
-    args := os.Args[1:]
+    flag.Usage = func() {
+        fmt.Println("Usage: gotube -vidurl=<YT_VID_URL> -outdir=<OUT_DIRECTORY> [-v]\n")
+    }
     
-    if len(args) < 2 {
-        fmt.Println("Usage: gotube yt-url outdir [-v]\n")
-        fmt.Println("yt-url: URL of a YouTube video you want to download (ex. https://www.youtube.com/watch?v=GNMqJS61NT0)")
-        fmt.Println("outdir: Directory where you want the video to be saved (ex. C:\\Users\\Jimmy Yang\\Bullshit)\n")
-        fmt.Println("-v: Verbose option")
-        
+    var videoURL string
+    var outputDirectory string
+    var verbose bool
+    
+    flag.StringVar(&videoURL, "vidurl", "", "URL of a YouTube video")
+    flag.StringVar(&outputDirectory, "outdir", "", "Directory where you want the video to be downloaded")
+    flag.BoolVar(&verbose, "v", false, "If true, GoTube will display detailed download process")
+    
+    flag.Parse()
+    
+    if videoURL == "" || outputDirectory == "" {
+        flag.Usage()
         os.Exit(1)
     }
     
-    videoURL := args[0]
-    outputDirectory := args[1]
-    
-    DownloadYTVideo(videoURL, outputDirectory, len(args) == 3)
+    DownloadYTVideo(videoURL, outputDirectory, verbose)
 }
