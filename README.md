@@ -20,7 +20,7 @@ go build gotube.go
 
 ## How It Works?
 
-When GoTube receives a YouTube video URL as an input, it will extract a video id portion of the URL. Then it sends an HTTP GET request to a server through URL ```https://www.youtube.com/get_video_info``` with the video id as a query string. The GET request will return an encoded data containing YouTube video data which will be decoded by GoTube. It will then extract the video's title, file format and its download URL from the data. After getting all necessary data, GoTube makes a video file with specified title and file format in User's OS and sends another HTTP GET request to the download URL. The data received through the GET request will be copied to the created video file.
+When GoTube receives a YouTube video URL as an input, it will extract a video id portion of the URL. Then it sends a HTTP GET request to a server through URL ```https://www.youtube.com/get_video_info``` with the video id as a query string. The GET request will return an encoded data containing YouTube video data which will be decoded by GoTube. It will then extract the video's title, file format and its download URL from the data. After getting all necessary data, GoTube makes a video file with specified title and file format in User's OS and sends another HTTP GET request to the download URL. The data received through the GET request will be copied to the created video file.
 
 ### Steps:
 
@@ -33,16 +33,16 @@ When GoTube receives a YouTube video URL as an input, it will extract a video id
 ## Example Commands
 
 ```markdown
-gotube https://www.youtube.com/watch?v=vUOHGL4Iv34 <download directory>
+gotube -vidurl=https://www.youtube.com/watch?v=vUOHGL4Iv34 -outdir=<download directory>
+```
+
+```markdown
+gotube -vidurl=https://www.youtube.com/watch?v=Hh_HyNfyOKs -outdir=<download directory>
 ```
 
 With verbose option:
 ```markdown
-gotube https://www.youtube.com/watch?v=wJMkvlTAzHc <download directory> -v
-```
-
-```markdown
-gotube https://www.youtube.com/watch?v=Hh_HyNfyOKs <download directory>
+gotube -vidurl=https://www.youtube.com/watch?v=wJMkvlTAzHc -outdir=<download directory> -v
 ```
 
 Replace \<download directory\> your download directory (ex. C:\users\marethyu\documents\poo)
