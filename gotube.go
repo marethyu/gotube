@@ -204,7 +204,7 @@ func ParseStr(encodedString string, result map[string]interface{}) error {
     return nil
 }
 
-func DownloadYTVideo(videoURL, outputDirectory string, isVerbose bool) {
+func DownloadYTVideo(videoURL, outputDirectory string, verbose bool) {
     isMatch, _ := regexp.MatchString("https://www\\.youtube\\.com/watch\\?v=[\\w-]+", videoURL) // TODO need better regex pattern
     
     if !isMatch {
@@ -224,7 +224,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, isVerbose bool) {
     id, _ := GetVideoID(videoURL)
     u := "https://www.youtube.com/get_video_info?video_id=" + id
     
-    if isVerbose {
+    if verbose {
         fmt.Printf("GoTube: Making a HTTP GET request to %s...\n", u)
     }
     
@@ -263,7 +263,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, isVerbose bool) {
     fileName := re.ReplaceAllString(title + "." + format, "")
     path := outputDirectory + "\\" + fileName
     
-    if isVerbose {
+    if verbose {
         fmt.Printf("GoTube: Creating a file %s...\n", path)
     }
     
@@ -279,7 +279,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, isVerbose bool) {
     request.Header.Set("Content-Type", "application/zip")
     request.Header.Set("Content-Transfer-Encoding", "binary")
     
-    if isVerbose {
+    if verbose {
         fmt.Printf("GoTube: Making another HTTP GET Request to %s...\n", downloadURL)
     }
     
@@ -294,7 +294,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, isVerbose bool) {
     
     if err != nil {
         log.Fatal("GoTube: Unable to download the video! :(")
-    } else if isVerbose {
+    } else if verbose {
         fmt.Println("GoTube: The video downloaded successfully! :))")
     }
 }
