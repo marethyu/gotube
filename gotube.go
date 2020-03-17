@@ -41,12 +41,38 @@ import (
     "io"
     "io/ioutil"
     "log"
+    "math"
     "net/http"
     "net/url"
     "os"
     "regexp"
+    "strconv"
     "strings"
+    "time"
 )
+
+var verbose bool
+var percent int
+
+type WriteCounter struct {
+    BytesDownloaded int64
+    TotalBytes int64
+}
+
+func DisplayStatus() {
+    for percent < 100 {
+        fmt.Printf("Download progress: %%%d complete\n", percent)
+        time.Sleep(5 * time.Second)
+    }
+}
+
+func (pWc *WriteCounter) Write(b []byte) (n int, err error) {
+    n = len(b)
+    pWc.BytesDownloaded += int64(n)
+    percent = int(math.Round(float64(pWc.BytesDownloaded) * 100.0 / float64(pWc.TotalBytes)))
+    
+    return
+}
 
 // Check if the given file/directory exists
 func Exists(path string) (bool, error, os.FileInfo) {
@@ -205,7 +231,7 @@ func ParseStr(encodedString string, result map[string]interface{}) error {
     return nil
 }
 
-func DownloadYTVideo(videoURL, outputDirectory string, verbose bool) {
+func DownloadYTVideo(videoURL, outputDirectory string) {
     isMatch, _ := regexp.MatchString("https://www\\.youtube\\.com/watch\\?v=[\\w-]+", videoURL) // TODO need better regex pattern
     
     if !isMatch {
@@ -273,6 +299,15 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose bool) {
     
     client := &http.Client{}
     
+    // Determine the video size in bytes
+    resp, err := client.Head(downloadURL)
+    
+    if err != nil {
+        panic(err.Error())
+    }
+    
+    videoSize, _ := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
+    
     request, _ := http.NewRequest("GET", downloadURL, nil)
     request.Header.Set("Cache-Control", "public")
     request.Header.Set("Content-Description", "File Transfer")
@@ -291,7 +326,16 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose bool) {
         panic(fmt.Errorf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode)))
     }
     
-    _, err := io.Copy(output, resp.Body)
+    var body io.Reader
+    
+    if !verbose {
+        body = resp.Body
+    } else {
+        go DisplayStatus()
+        body = io.TeeReader(resp.Body, &WriteCounter{0, videoSize}) // Pipe stream
+    }
+    
+    _, err = io.Copy(output, body)
     
     if err != nil {
         log.Fatal("GoTube: Unable to download the video! :(")
@@ -307,7 +351,6 @@ func main() {
     
     var videoURL string
     var outputDirectory string
-    var verbose bool
     
     flag.StringVar(&videoURL, "vidurl", "", "URL of a YouTube video")
     flag.StringVar(&outputDirectory, "outdir", "", "Directory where you want the video to be downloaded")
@@ -320,5 +363,5 @@ func main() {
         os.Exit(1)
     }
     
-    DownloadYTVideo(videoURL, outputDirectory, verbose)
+    DownloadYTVideo(videoURL, outputDirectory)
 }
