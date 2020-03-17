@@ -49,6 +49,6 @@ gotube -vidurl=https://www.youtube.com/watch?v=wJMkvlTAzHc -outdir=<download dir
 Replace \<download directory\> your download directory (ex. C:\users\marethyu\documents\poo)
 
 ## TODO
- - Download videos asynchronously
+ - Download multiple videos asynchronously
  - Option to download audio only
  - Download whole playlist
