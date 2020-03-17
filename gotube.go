@@ -45,6 +45,7 @@ import (
     "net/http"
     "net/url"
     "os"
+    "path/filepath"
     "regexp"
     "strconv"
     "strings"
@@ -287,7 +288,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose bool) {
     // Remove characters like ':' and '?' in the video title
     re := regexp.MustCompile("[^A-Za-z0-9.\\_\\-]")
     fileName := re.ReplaceAllString(title + "." + format, "")
-    path := outputDirectory + "\\" + fileName
+    path := filepath.Join(outputDirectory, fileName)
     
     if verbose {
         fmt.Printf("GoTube: Creating a file %s...\n", path)
