@@ -1,14 +1,15 @@
 # GoTube
 
+![](https://img.shields.io/badge/build-passing-green)
 ![](https://img.shields.io/badge/version-v1.1-blue)
 
 ## Overview
 
 This repository contains a single-file implementation of YouTube video downloader written in Go. It does not require any third-party packages, only built-in packages from the standard library. The code is compact and easily-readable.
 
-## Installation
+## Build Instructions
 
-You can fetch one of the executable binaries (preferably latest one) from Releases. Unfortunately the binaries only support Windows x86-64 platform this time. However you can help me to make and upload more binaries for different platforms.
+You can fetch one of the executable binaries (preferably latest one) from Releases. The binaries only support Windows (32 and 64 bit) and Linux (32 and 64 bit) this time.
 
 ### From Source
 
@@ -52,3 +53,11 @@ Replace \<download directory\> your download directory (ex. C:\users\marethyu\do
  - Download multiple videos asynchronously
  - Option to download audio only
  - Download whole playlist
+
+## Contributing
+
+I appreciate any kind of contributions. It can include code changes, new features and recommendations.
+
+## License
+
+It's licensed under [BSD-3-Clause](LICENSE).
