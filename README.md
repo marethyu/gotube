@@ -1,6 +1,6 @@
 # GoTube
 
-![](https://img.shields.io/badge/version-v1.0-blue)
+![](https://img.shields.io/badge/version-v1.1-blue)
 
 ## Overview
 
@@ -12,9 +12,10 @@ You can fetch one of the executable binaries (preferably latest one) from Releas
 
 ### From Source
 
-If you don't have Go installed yet, download [here](https://golang.org/dl/). Clone this repository and go to the repository directory.
-Then run the following command:
+If you don't have Go installed yet, download [here](https://golang.org/dl/). Then run the following commands:
 ```markdown
+git clone https://github.com/Marethyu12/gotube.git
+cd gotube
 go build gotube.go
 ```
 
@@ -48,6 +49,6 @@ gotube -vidurl=https://www.youtube.com/watch?v=wJMkvlTAzHc -outdir=<download dir
 Replace \<download directory\> your download directory (ex. C:\users\marethyu\documents\poo)
 
 ## TODO
+ - Download videos asynchronously
  - Option to download audio only
  - Download whole playlist
- - Progress bar?
