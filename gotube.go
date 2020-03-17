@@ -51,7 +51,6 @@ import (
     "time"
 )
 
-var verbose bool
 var percent int
 
 type WriteCounter struct {
@@ -231,7 +230,7 @@ func ParseStr(encodedString string, result map[string]interface{}) error {
     return nil
 }
 
-func DownloadYTVideo(videoURL, outputDirectory string) {
+func DownloadYTVideo(videoURL, outputDirectory string, verbose bool) {
     isMatch, _ := regexp.MatchString("https://www\\.youtube\\.com/watch\\?v=[\\w-]+", videoURL) // TODO need better regex pattern
     
     if !isMatch {
@@ -351,6 +350,7 @@ func main() {
     
     var videoURL string
     var outputDirectory string
+    var verbose bool
     
     flag.StringVar(&videoURL, "vidurl", "", "URL of a YouTube video")
     flag.StringVar(&outputDirectory, "outdir", "", "Directory where you want the video to be downloaded")
@@ -363,5 +363,5 @@ func main() {
         os.Exit(1)
     }
     
-    DownloadYTVideo(videoURL, outputDirectory)
+    DownloadYTVideo(videoURL, outputDirectory, verbose)
 }
