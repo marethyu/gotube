@@ -49,7 +49,6 @@ import (
     "regexp"
     "strconv"
     "strings"
-    "time"
 )
 
 var percent int
@@ -61,16 +60,16 @@ type WriteCounter struct {
 
 func DisplayStatus() {
     for percent < 100 {
-        fmt.Printf("Download progress: %%%d complete\n", percent)
-        time.Sleep(5 * time.Second)
+        fmt.Printf("\rGoTube: Download progress: %%%d complete", percent)
     }
+    
+    fmt.Println("\rGoTube: Download progress: %100 complete")
 }
 
 func (pWc *WriteCounter) Write(b []byte) (n int, err error) {
     n = len(b)
     pWc.BytesDownloaded += int64(n)
     percent = int(math.Round(float64(pWc.BytesDownloaded) * 100.0 / float64(pWc.TotalBytes)))
-    
     return
 }
 
