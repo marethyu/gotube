@@ -27,8 +27,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  * 
  ******************************************************************************************
- * GoTube: Simple YouTube Video Downloader (v1)
+ * GoTube: Simple YouTube Video Downloader (v1.1)
  * 
+ * REQUIRES: ffmpeg
  * WARNING: The download process might be very slow and will destroy your computer if it happens. (LOL)
  */
 
@@ -45,6 +46,7 @@ import (
     "net/http"
     "net/url"
     "os"
+    "os/exec"
     "path/filepath"
     "regexp"
     "strconv"
@@ -230,7 +232,7 @@ func ParseStr(encodedString string, result map[string]interface{}) error {
     return nil
 }
 
-func DownloadYTVideo(videoURL, outputDirectory string, verbose bool) {
+func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
     isMatch, _ := regexp.MatchString("https://www\\.youtube\\.com/watch\\?v=[\\w-]+", videoURL) // TODO need better regex pattern
     
     if !isMatch {
@@ -302,7 +304,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose bool) {
     resp, err := client.Head(downloadURL)
     
     if err != nil {
-        panic(err.Error())
+        panic(err)
     }
     
     videoSize, _ := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
@@ -341,20 +343,51 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose bool) {
     } else if verbose {
         fmt.Println("GoTube: The video downloaded successfully! :))")
     }
+    
+    if audio {
+        audioFile := filepath.Join(outputDirectory, strings.TrimRight(fileName, filepath.Ext(fileName)) + ".mp3")
+        
+        if verbose {
+            fmt.Printf("GoTube: Creating a file %s...\n", audioFile)
+        }
+        
+        ffmpeg, err := exec.LookPath("ffmpeg")
+        
+        if err != nil {
+            log.Fatal("ffmpeg not found")
+        }
+        
+        cmd := exec.Command(ffmpeg, "-i", path, "-vn", "-ar", "44100", "-ac", "1", "-b:a", "32k", "-f", "mp3", audioFile)
+        
+        if verbose {
+            cmd.Stdout = os.Stdout
+            cmd.Stderr = os.Stderr
+        }
+        
+        err = cmd.Run()
+        
+        if err != nil {
+            log.Fatal(err)
+        } else if verbose {
+            fmt.Println("GoTube: The video audio extracted successfully! :))")
+        }
+    }
 }
 
 func main() {
     flag.Usage = func() {
-        fmt.Println("Usage: gotube -vidurl=<YT_VID_URL> -outdir=<OUT_DIRECTORY> [-v]\n")
+        fmt.Println("Usage: gotube -vidurl=<YT_VID_URL> -outdir=<OUT_DIRECTORY> [-v] [-a]\n")
     }
     
     var videoURL string
     var outputDirectory string
     var verbose bool
+    var audio bool
     
     flag.StringVar(&videoURL, "vidurl", "", "URL of a YouTube video")
     flag.StringVar(&outputDirectory, "outdir", "", "Directory where you want the video to be downloaded")
     flag.BoolVar(&verbose, "v", false, "If true, GoTube will display detailed download process")
+    flag.BoolVar(&audio, "a", false, "If true, GoTube will download video's audio as well")
     
     flag.Parse()
     
@@ -363,5 +396,5 @@ func main() {
         os.Exit(1)
     }
     
-    DownloadYTVideo(videoURL, outputDirectory, verbose)
+    DownloadYTVideo(videoURL, outputDirectory, verbose, audio)
 }
