@@ -32,14 +32,11 @@ When GoTube receives a YouTube video URL as an input, it will extract a video id
 4. GoTube creates a video file in User's OS and make another GET request through the download URL.
 5. GoTube copies contents of data received through the GET request to the created video file.
 
-## Example Commands
+## Example Usage
 
+Basic:
 ```markdown
 gotube -vidurl=https://www.youtube.com/watch?v=vUOHGL4Iv34 -outdir=<download directory>
-```
-
-```markdown
-gotube -vidurl=https://www.youtube.com/watch?v=Hh_HyNfyOKs -outdir=<download directory>
 ```
 
 With verbose option:
@@ -47,11 +44,15 @@ With verbose option:
 gotube -vidurl=https://www.youtube.com/watch?v=wJMkvlTAzHc -outdir=<download directory> -v
 ```
 
+Option to download audio (requires ffmpeg, get one [here](https://github.com/adaptlearning/adapt_authoring/wiki/Installing-FFmpeg) if you don't have one installed):
+```markdown
+gotube -vidurl=https://www.youtube.com/watch?v=Hh_HyNfyOKs -outdir=<download directory> -a
+```
+
 Replace \<download directory\> your download directory (ex. C:\users\marethyu\documents\poo)
 
 ## TODO
  - Download multiple videos asynchronously
- - Option to download audio only
  - Download whole playlist
 
 ## Contributing
