@@ -41,7 +41,7 @@ When GoTube receives a YouTube video URL as an input, it will extract a video id
 
 Basic:
 ```markdown
-gotube -vidurl=https://www.youtube.com/watch?v=vUOHGL4Iv34 -outdir=<download directory>
+gotube -vidurl=https://www.youtube.com/watch?v=2fsMUqYix0c -outdir=<download directory>
 ```
 
 With verbose option:
