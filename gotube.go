@@ -380,7 +380,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 
 func main() {
 	flag.Usage = func() {
-		fmt.Println("Usage: gotube -vidurl=<YT_VID_URL> -outdir=<OUT_DIRECTORY> [-v] [-a]\n")
+		fmt.Println("Usage: gotube -vidurl=<YT_VID_URL> [-outdir=<OUT_DIRECTORY>] [-v] [-a]\n")
 	}
 
 	var videoURL string
@@ -389,7 +389,7 @@ func main() {
 	var audio bool
 
 	flag.StringVar(&videoURL, "vidurl", "", "URL of a YouTube video")
-	flag.StringVar(&outputDirectory, "outdir", "", "Directory where you want the video to be downloaded")
+	flag.StringVar(&outputDirectory, "outdir", ".", "Directory where you want the video to be downloaded")
 	flag.BoolVar(&verbose, "v", false, "If true, GoTube will display detailed download process")
 	flag.BoolVar(&audio, "a", false, "If true, GoTube will download video's audio as well")
 
