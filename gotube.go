@@ -267,7 +267,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		panic(fmt.Errorf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode)))
+		log.Fatalf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode))
 	}
 
 	byteArray, _ := ioutil.ReadAll(resp.Body)
@@ -319,7 +319,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 	// Determine the video size in bytes
 	resp, err = client.Head(downloadURL)
 	if err != nil {
-		panic(err)
+		log.Fatalf("GoTube: Failed to issue HEAD request for download URL: %v", err)
 	}
 
 	videoSize, _ := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
@@ -342,7 +342,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		panic(fmt.Errorf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode)))
+		log.Fatalf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode))
 	}
 
 	var body io.Reader
