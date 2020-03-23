@@ -237,7 +237,7 @@ func ParseStr(encodedString string, result map[string]interface{}) error {
 }
 
 func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
-	isMatch, _ := regexp.MatchString("https://www\\.youtube\\.com/watch\\?v=[\\w-]+", videoURL) // TODO need better regex pattern
+	isMatch, _ := regexp.MatchString(`https://www\.youtube\.com/watch\?v=[\w-]+`, videoURL) // TODO need better regex pattern
 
 	if !isMatch {
 		log.Fatal("GoTube: Invalid YouTube URL!")
