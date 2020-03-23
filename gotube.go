@@ -260,22 +260,31 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 		fmt.Printf("GoTube: Making a HTTP GET request thru %s...\n", u)
 	}
 
-	resp, _ := http.Get(u)
-	defer resp.Body.Close()
+	resp, err := http.Get(u)
+	if err != nil {
+		log.Fatalf("GoTube: Failed to acquire video info: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		panic(fmt.Errorf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode)))
+		log.Fatalf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode))
 	}
 
 	byteArray, _ := ioutil.ReadAll(resp.Body)
 
 	data := make(map[string]interface{})
-	ParseStr(string(byteArray[:]), data)
+	err = ParseStr(string(byteArray[:]), data)
+	if err != nil {
+		log.Fatalf("GoTube: Failed to parse video info response: %v", err)
+	}
 
 	// We only need to retrieve video title, format and download url nothing else
 
 	var videoData map[string]interface{}
-	json.Unmarshal([]byte(data["player_response"].(string)), &videoData)
+	err = json.Unmarshal([]byte(data["player_response"].(string)), &videoData)
+	if err != nil {
+		log.Fatalf("GoTube: Failed to unmarshal video info data: %v", err)
+	}
 
 	videoDetails := videoData["videoDetails"].(map[string]interface{})
 	streamingData := videoData["streamingData"].(map[string]interface{})
@@ -299,16 +308,18 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 		fmt.Printf("GoTube: Creating a file %s...\n", path)
 	}
 
-	output, _ := os.Create(path)
-	defer output.Close()
+	output, err := os.Create(path)
+	if err != nil {
+		log.Fatalf("GoTube: Failed to create video file: %v", err)
+	}
+	defer func() { _ = output.Close() }()
 
 	client := &http.Client{}
 
 	// Determine the video size in bytes
-	resp, err := client.Head(downloadURL)
-
+	resp, err = client.Head(downloadURL)
 	if err != nil {
-		panic(err)
+		log.Fatalf("GoTube: Failed to issue HEAD request for download URL: %v", err)
 	}
 
 	videoSize, _ := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
@@ -324,11 +335,14 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 		fmt.Printf("GoTube: Making another HTTP GET Request thru %s...\n", downloadURL)
 	}
 
-	resp, _ = client.Do(request)
-	defer resp.Body.Close()
+	resp, err = client.Do(request)
+	if err != nil {
+		log.Fatalf("GoTube: Failed to download video: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		panic(fmt.Errorf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode)))
+		log.Fatalf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode))
 	}
 
 	var body io.Reader
@@ -380,7 +394,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 
 func main() {
 	flag.Usage = func() {
-		fmt.Println("Usage: gotube -vidurl=<YT_VID_URL> -outdir=<OUT_DIRECTORY> [-v] [-a]\n")
+		fmt.Println("Usage: gotube -vidurl=<YT_VID_URL> -outdir=<OUT_DIRECTORY> [-v] [-a]")
 	}
 
 	var videoURL string
