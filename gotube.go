@@ -394,7 +394,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 
 func main() {
 	flag.Usage = func() {
-		fmt.Println("Usage: gotube -vidurl=<YT_VID_URL> -outdir=<OUT_DIRECTORY> [-v] [-a]\n")
+		fmt.Println("Usage: gotube -vidurl=<YT_VID_URL> -outdir=<OUT_DIRECTORY> [-v] [-a]")
 	}
 
 	var videoURL string
