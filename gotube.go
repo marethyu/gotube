@@ -264,7 +264,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 	if err != nil {
 		log.Fatalf("GoTube: Failed to acquire video info: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		log.Fatalf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode))
@@ -312,7 +312,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 	if err != nil {
 		log.Fatalf("GoTube: Failed to create video file: %v", err)
 	}
-	defer output.Close()
+	defer func() { _ = output.Close() }()
 
 	client := &http.Client{}
 
@@ -339,7 +339,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 	if err != nil {
 		log.Fatalf("GoTube: Failed to download video: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		log.Fatalf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode))
