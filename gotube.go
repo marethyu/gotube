@@ -300,7 +300,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 	downloadURL := moreData["url"].(string)
 
 	// Remove characters like ':' and '?' in the video title
-	re := regexp.MustCompile("[^A-Za-z0-9.\\_\\-]")
+	re := regexp.MustCompile(`[^A-Za-z0-9.\_\-]`)
 	fileName := re.ReplaceAllString(title+"."+format, "")
 	path := filepath.Join(outputDirectory, fileName)
 
