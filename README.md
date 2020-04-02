@@ -41,26 +41,30 @@ When GoTube receives a YouTube video URL as an input, it will extract a video id
 
 Basic (install to the current directory):
 ```markdown
-gotube -vidurl=https://www.youtube.com/watch?v=2fsMUqYix0c
+gotube https://www.youtube.com/watch?v=2fsMUqYix0c
+```
+
+Download Multiple videos:
+```markdown
+gotube https://www.youtube.com/watch?v=2fsMUqYix0c https://www.youtube.com/watch?v=wJMkvlTAzHc
 ```
 
 Install to the specified download directory (\<download directory\>):
 ```markdown
-gotube -vidurl=https://www.youtube.com/watch?v=MXStYQSLd_M -outdir=<download directory>
+gotube -v -outdir=<download directory> https://www.youtube.com/watch?v=MXStYQSLd_M
 ```
 
 With verbose option:
 ```markdown
-gotube -vidurl=https://www.youtube.com/watch?v=wJMkvlTAzHc -v
+gotube -v https://www.youtube.com/watch?v=wJMkvlTAzHc
 ```
 
 Option to download audio (requires ffmpeg, get one [here](https://github.com/adaptlearning/adapt_authoring/wiki/Installing-FFmpeg) if you don't have one installed):
 ```markdown
-gotube -vidurl=https://www.youtube.com/watch?v=Hh_HyNfyOKs -a
+gotube -a https://www.youtube.com/watch?v=Hh_HyNfyOKs
 ```
 
 ## TODO
- - Download multiple videos asynchronously
  - Download whole playlist
 
 ## Contributing
