@@ -36,12 +36,13 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"math"
 	"net/http"
 	"net/url"
@@ -51,6 +52,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"golang.org/x/sync/errgroup"
 )
 
 var percent int
@@ -236,21 +239,21 @@ func ParseStr(encodedString string, result map[string]interface{}) error {
 	return nil
 }
 
-func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
+func DownloadYTVideo(videoURL string, outputDirectory string, verbose, audio bool) error {
 	isMatch, _ := regexp.MatchString(`https://www\.youtube\.com/watch\?v=[\w-]+`, videoURL) // TODO need better regex pattern
 
 	if !isMatch {
-		log.Fatal("GoTube: Invalid YouTube URL!")
+		return errors.New("GoTube: Invalid YouTube URL!")
 	}
 
 	doesExist, _, fi := Exists(outputDirectory)
 
 	if !doesExist {
-		log.Fatal("GoTube: The output directory doesn't exist!")
+		return errors.New("GoTube: The output directory doesn't exist!")
 	}
 
 	if !fi.Mode().IsDir() {
-		log.Fatal("GoTube: The directory is a file!")
+		return errors.New("GoTube: The directory is a file!")
 	}
 
 	id, _ := GetVideoID(videoURL)
@@ -262,12 +265,12 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 
 	resp, err := http.Get(u)
 	if err != nil {
-		log.Fatalf("GoTube: Failed to acquire video info: %v", err)
+		return errors.New(fmt.Sprintf("GoTube: Failed to acquire video info: %v", err))
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Fatalf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode))
+		return errors.New(fmt.Sprintf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode)))
 	}
 
 	byteArray, _ := ioutil.ReadAll(resp.Body)
@@ -275,7 +278,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 	data := make(map[string]interface{})
 	err = ParseStr(string(byteArray[:]), data)
 	if err != nil {
-		log.Fatalf("GoTube: Failed to parse video info response: %v", err)
+		return errors.New(fmt.Sprintf("GoTube: Failed to parse video info response: %v", err))
 	}
 
 	// We only need to retrieve video title, format and download url nothing else
@@ -283,7 +286,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 	var videoData map[string]interface{}
 	err = json.Unmarshal([]byte(data["player_response"].(string)), &videoData)
 	if err != nil {
-		log.Fatalf("GoTube: Failed to unmarshal video info data: %v", err)
+		return errors.New(fmt.Sprintf("GoTube: Failed to unmarshal video info data: %v", err))
 	}
 
 	videoDetails := videoData["videoDetails"].(map[string]interface{})
@@ -310,16 +313,16 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 
 	output, err := os.Create(path)
 	if err != nil {
-		log.Fatalf("GoTube: Failed to create video file: %v", err)
+		return errors.New(fmt.Sprintf("GoTube: Failed to create video file: %v", err))
 	}
-	defer func() { _ = output.Close() }()
+	defer output.Close()
 
 	client := &http.Client{}
 
 	// Determine the video size in bytes
 	resp, err = client.Head(downloadURL)
 	if err != nil {
-		log.Fatalf("GoTube: Failed to issue HEAD request for download URL: %v", err)
+		return errors.New(fmt.Sprintf("GoTube: Failed to issue HEAD request for download URL: %v", err))
 	}
 
 	videoSize, _ := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
@@ -337,12 +340,12 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 
 	resp, err = client.Do(request)
 	if err != nil {
-		log.Fatalf("GoTube: Failed to download video: %v", err)
+		return err
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Fatalf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode))
+		return errors.New(fmt.Sprintf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode)))
 	}
 
 	var body io.Reader
@@ -357,7 +360,7 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 	_, err = io.Copy(output, body)
 
 	if err != nil {
-		log.Fatal("GoTube: Unable to download the video! :(")
+		return errors.New("GoTube: Unable to download the video! :(")
 	} else if verbose {
 		fmt.Println("GoTube: The video downloaded successfully! :))")
 	}
@@ -370,9 +373,8 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 		}
 
 		ffmpeg, err := exec.LookPath("ffmpeg")
-
 		if err != nil {
-			log.Fatal("ffmpeg not found")
+			return errors.New("ffmpeg not found")
 		}
 
 		cmd := exec.Command(ffmpeg, "-i", path, "-vn", "-ar", "44100", "-ac", "1", "-b:a", "32k", "-f", "mp3", audioFile)
@@ -385,34 +387,53 @@ func DownloadYTVideo(videoURL, outputDirectory string, verbose, audio bool) {
 		err = cmd.Run()
 
 		if err != nil {
-			log.Fatal(err)
+			return err
 		} else if verbose {
 			fmt.Println("GoTube: The video audio extracted successfully! :))")
 		}
 	}
+
+	return nil
+}
+
+func Download(URLs []string, outputDirectory string, verbose bool, audio bool) error {
+	eg, ctx := errgroup.WithContext(context.Background())
+	for _, url := range URLs {
+		url := url
+		eg.Go(func() error {
+			select {
+			case <-ctx.Done():
+				fmt.Println("Canceled:", url)
+				return nil
+			default:
+				return DownloadYTVideo(url, outputDirectory, verbose, audio)
+			}
+		})
+	}
+
+	return eg.Wait()
 }
 
 func main() {
 	flag.Usage = func() {
-		fmt.Println("Usage: gotube -vidurl=<YT_VID_URL> [-outdir=<OUT_DIRECTORY>] [-v] [-a]\n")
+		fmt.Println("Usage: gotube [-outdir=<OUT_DIRECTORY>] [-v] [-a] <YT_VID_URL>\n")
 	}
 
-	var videoURL string
 	var outputDirectory string
 	var verbose bool
 	var audio bool
 
-	flag.StringVar(&videoURL, "vidurl", "", "URL of a YouTube video")
 	flag.StringVar(&outputDirectory, "outdir", ".", "Directory where you want the video to be downloaded")
 	flag.BoolVar(&verbose, "v", false, "If true, GoTube will display detailed download process")
 	flag.BoolVar(&audio, "a", false, "If true, GoTube will download video's audio as well")
 
 	flag.Parse()
+	args := flag.Args()
 
-	if videoURL == "" || outputDirectory == "" {
+	if outputDirectory == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	DownloadYTVideo(videoURL, outputDirectory, verbose, audio)
+	Download(args, outputDirectory, verbose, audio)
 }
