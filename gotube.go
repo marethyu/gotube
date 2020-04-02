@@ -406,7 +406,9 @@ func Download(URLs []string, outputDirectory string, verbose bool, audio bool) e
 				fmt.Println("Canceled:", url)
 				return nil
 			default:
-				return DownloadYTVideo(url, outputDirectory, verbose, audio)
+				err := DownloadYTVideo(url, outputDirectory, verbose, audio)
+				fmt.Println(err)
+				return err
 			}
 		})
 	}
