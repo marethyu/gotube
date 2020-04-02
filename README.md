@@ -1,7 +1,7 @@
 # GoTube
 
 ![](https://img.shields.io/badge/build-passing-green)
-![](https://img.shields.io/badge/version-v1.1-blue)
+![](https://img.shields.io/badge/version-v1.2-blue)
 
 ## Overview
 
@@ -22,6 +22,7 @@ Run the following commands:
 ```markdown
 git clone https://github.com/Marethyu12/gotube.git
 cd gotube
+go get golang.org/x/sync/errgroup
 go build gotube.go
 ```
 
@@ -44,14 +45,14 @@ Basic (install to the current directory):
 gotube https://www.youtube.com/watch?v=2fsMUqYix0c
 ```
 
-Download Multiple videos:
+Download multiple videos:
 ```markdown
 gotube https://www.youtube.com/watch?v=2fsMUqYix0c https://www.youtube.com/watch?v=wJMkvlTAzHc
 ```
 
 Install to the specified download directory (\<download directory\>):
 ```markdown
-gotube -v -outdir=<download directory> https://www.youtube.com/watch?v=MXStYQSLd_M
+gotube -outdir=<download directory> https://www.youtube.com/watch?v=MXStYQSLd_M
 ```
 
 With verbose option:
