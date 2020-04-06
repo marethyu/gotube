@@ -1,6 +1,6 @@
 # GoTube
 
-![](https://img.shields.io/badge/build-passing-green)
+[![Build Status](https://api.travis-ci.com/Marethyu12/gotube.svg?branch=master)](https://travis-ci.com/Marethyu12/gotube)
 ![](https://img.shields.io/badge/version-v1.2-blue)
 
 ## Overview
