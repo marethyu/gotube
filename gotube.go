@@ -43,6 +43,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"math"
 	"net/http"
 	"net/url"
@@ -274,6 +275,7 @@ func DownloadYTVideo(videoURL string, outputDirectory string, verbose, audio boo
 	}
 
 	byteArray, _ := ioutil.ReadAll(resp.Body)
+	log.Printf("received: %v", string(byteArray))
 
 	data := make(map[string]interface{})
 	err = ParseStr(string(byteArray[:]), data)
@@ -283,12 +285,19 @@ func DownloadYTVideo(videoURL string, outputDirectory string, verbose, audio boo
 
 	// We only need to retrieve video title, format and download url nothing else
 
+	log.Printf("player_response: %v", data["player_response"])
 	var videoData map[string]interface{}
 	err = json.Unmarshal([]byte(data["player_response"].(string)), &videoData)
 	if err != nil {
 		return errors.New(fmt.Sprintf("GoTube: Failed to unmarshal video info data: %v", err))
 	}
 
+	log.Printf("videoData: %v", videoData)
+	for key, value := range videoData {
+		log.Printf("videoData: %v - %v", key, value)
+	}
+	log.Printf("videoDetails: %v", videoData["videoDetails"])
+	log.Printf("streamingData: %v", videoData["streamingData"])
 	videoDetails := videoData["videoDetails"].(map[string]interface{})
 	streamingData := videoData["streamingData"].(map[string]interface{})
 	formats := streamingData["formats"].([]interface{})
@@ -399,6 +408,7 @@ func DownloadYTVideo(videoURL string, outputDirectory string, verbose, audio boo
 func Download(URLs []string, outputDirectory string, verbose bool, audio bool) error {
 	eg, ctx := errgroup.WithContext(context.Background())
 	for _, url := range URLs {
+		log.Printf("URL: %s", url)
 		url := url
 		eg.Go(func() error {
 			select {
@@ -418,20 +428,27 @@ func Download(URLs []string, outputDirectory string, verbose bool, audio bool) e
 
 func main() {
 	flag.Usage = func() {
-		fmt.Println("Usage: gotube [-outdir=<OUT_DIRECTORY>] [-v] [-a] <YT_VID_URL>\n")
+		fmt.Println("Usage: gotube [-outdir=<OUT_DIRECTORY>] [-v] [-d] [-a] <YT_VID_URL>\n")
 	}
 
 	var outputDirectory string
 	var verbose bool
+	var debug bool
 	var audio bool
 
 	flag.StringVar(&outputDirectory, "outdir", ".", "Directory where you want the video to be downloaded")
 	flag.BoolVar(&verbose, "v", false, "If true, GoTube will display detailed download process")
+	flag.BoolVar(&debug, "d", false, "Turn on debug logging")
 	flag.BoolVar(&audio, "a", false, "If true, GoTube will download video's audio as well")
 
 	flag.Parse()
 	args := flag.Args()
 
+	if debug {
+		log.SetPrefix("\n\n")
+	} else {
+		log.SetOutput(ioutil.Discard)
+	}
 	if outputDirectory == "" {
 		flag.Usage()
 		os.Exit(1)
