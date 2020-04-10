@@ -289,6 +289,10 @@ func DownloadYTVideo(videoURL string, outputDirectory string, verbose, audio boo
 		return errors.New(fmt.Sprintf("GoTube: Failed to unmarshal video info data: %v", err))
 	}
 
+	if videoData["streamingData"] == nil {
+		return errors.New(fmt.Sprint("GoTube: streamingData is missing from this video"))
+	}
+
 	videoDetails := videoData["videoDetails"].(map[string]interface{})
 	streamingData := videoData["streamingData"].(map[string]interface{})
 	formats := streamingData["formats"].([]interface{})
