@@ -298,6 +298,11 @@ func DownloadYTVideo(videoURL string, outputDirectory string, verbose, audio boo
 	}
 	log.Printf("videoDetails: %v", videoData["videoDetails"])
 	log.Printf("streamingData: %v", videoData["streamingData"])
+
+	if videoData["streamingData"] == nil {
+		return errors.New(fmt.Sprint("GoTube: streamingData is missing from this video"))
+	}
+
 	videoDetails := videoData["videoDetails"].(map[string]interface{})
 	streamingData := videoData["streamingData"].(map[string]interface{})
 	formats := streamingData["formats"].([]interface{})
