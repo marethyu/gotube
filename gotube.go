@@ -240,8 +240,16 @@ func ParseStr(encodedString string, result map[string]interface{}) error {
 	return nil
 }
 
-func getMetaData(u string) (string, string, error) {
-	resp, err := http.Get(u)
+func getMetaData(id string, verbose bool) (string, string, error) {
+	log.Printf("getMetaData for ID: %v", id)
+
+	metaURL := "https://www.youtube.com/get_video_info?video_id=" + id
+
+	if verbose {
+		fmt.Printf("GoTube: Making a HTTP GET request thru %s...\n", metaURL)
+	}
+
+	resp, err := http.Get(metaURL)
 	var fileName string
 	var downloadURL string
 
@@ -321,13 +329,8 @@ func DownloadYTVideo(videoURL string, outputDirectory string, verbose, audio boo
 	}
 
 	id, _ := GetVideoID(videoURL)
-	u := "https://www.youtube.com/get_video_info?video_id=" + id
 
-	if verbose {
-		fmt.Printf("GoTube: Making a HTTP GET request thru %s...\n", u)
-	}
-
-	fileName, downloadURL, err := getMetaData(u)
+	fileName, downloadURL, err := getMetaData(id, verbose)
 	if err != nil {
 		return err
 	}
