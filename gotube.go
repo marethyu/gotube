@@ -240,6 +240,69 @@ func ParseStr(encodedString string, result map[string]interface{}) error {
 	return nil
 }
 
+func getMetaData(u string) (string, string, error) {
+	resp, err := http.Get(u)
+	var fileName string
+	var downloadURL string
+
+	if err != nil {
+		return fileName, downloadURL, errors.New(fmt.Sprintf("GoTube: Failed to acquire video info: %v", err))
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return fileName, downloadURL, errors.New(fmt.Sprintf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode)))
+	}
+
+	byteArray, _ := ioutil.ReadAll(resp.Body)
+	log.Printf("received: %v", string(byteArray))
+
+	data := make(map[string]interface{})
+	err = ParseStr(string(byteArray[:]), data)
+	if err != nil {
+		return fileName, downloadURL, errors.New(fmt.Sprintf("GoTube: Failed to parse video info response: %v", err))
+	}
+
+	// We only need to retrieve video title, format and download url nothing else
+
+	log.Printf("player_response: %v", data["player_response"])
+	var videoData map[string]interface{}
+	err = json.Unmarshal([]byte(data["player_response"].(string)), &videoData)
+	if err != nil {
+		return fileName, downloadURL, errors.New(fmt.Sprintf("GoTube: Failed to unmarshal video info data: %v", err))
+	}
+
+	log.Printf("videoData: %v", videoData)
+	for key, value := range videoData {
+		log.Printf("videoData: %v - %v", key, value)
+	}
+	log.Printf("videoDetails: %v", videoData["videoDetails"])
+	log.Printf("streamingData: %v", videoData["streamingData"])
+
+	if videoData["streamingData"] == nil {
+		return fileName, downloadURL, errors.New(fmt.Sprint("GoTube: streamingData is missing from this video"))
+	}
+
+	videoDetails := videoData["videoDetails"].(map[string]interface{})
+	streamingData := videoData["streamingData"].(map[string]interface{})
+	formats := streamingData["formats"].([]interface{})
+
+	// Let's try the first format...
+	moreData := formats[0].(map[string]interface{})
+	moreData["mime"] = moreData["mimeType"]
+	s := moreData["mime"].(string)
+
+	title := strings.Replace(strings.ToLower(videoDetails["title"].(string)), " ", "_", -1)
+	format := s[strings.Index(s, "/")+1 : strings.Index(s, ";")]
+	downloadURL = moreData["url"].(string)
+
+	// Remove characters like ':' and '?' in the video title
+	re := regexp.MustCompile(`[^A-Za-z0-9.\_\-]`)
+	fileName = re.ReplaceAllString(title+"."+format, "")
+
+	return fileName, downloadURL, nil
+}
+
 func DownloadYTVideo(videoURL string, outputDirectory string, verbose, audio bool) error {
 	isMatch, _ := regexp.MatchString(`https://www\.youtube\.com/watch\?v=[\w-]+`, videoURL) // TODO need better regex pattern
 
@@ -264,61 +327,10 @@ func DownloadYTVideo(videoURL string, outputDirectory string, verbose, audio boo
 		fmt.Printf("GoTube: Making a HTTP GET request thru %s...\n", u)
 	}
 
-	resp, err := http.Get(u)
+	fileName, downloadURL, err := getMetaData(u)
 	if err != nil {
-		return errors.New(fmt.Sprintf("GoTube: Failed to acquire video info: %v", err))
+		return err
 	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode)))
-	}
-
-	byteArray, _ := ioutil.ReadAll(resp.Body)
-	log.Printf("received: %v", string(byteArray))
-
-	data := make(map[string]interface{})
-	err = ParseStr(string(byteArray[:]), data)
-	if err != nil {
-		return errors.New(fmt.Sprintf("GoTube: Failed to parse video info response: %v", err))
-	}
-
-	// We only need to retrieve video title, format and download url nothing else
-
-	log.Printf("player_response: %v", data["player_response"])
-	var videoData map[string]interface{}
-	err = json.Unmarshal([]byte(data["player_response"].(string)), &videoData)
-	if err != nil {
-		return errors.New(fmt.Sprintf("GoTube: Failed to unmarshal video info data: %v", err))
-	}
-
-	log.Printf("videoData: %v", videoData)
-	for key, value := range videoData {
-		log.Printf("videoData: %v - %v", key, value)
-	}
-	log.Printf("videoDetails: %v", videoData["videoDetails"])
-	log.Printf("streamingData: %v", videoData["streamingData"])
-
-	if videoData["streamingData"] == nil {
-		return errors.New(fmt.Sprint("GoTube: streamingData is missing from this video"))
-	}
-
-	videoDetails := videoData["videoDetails"].(map[string]interface{})
-	streamingData := videoData["streamingData"].(map[string]interface{})
-	formats := streamingData["formats"].([]interface{})
-
-	// Let's try the first format...
-	moreData := formats[0].(map[string]interface{})
-	moreData["mime"] = moreData["mimeType"]
-	s := moreData["mime"].(string)
-
-	title := strings.Replace(strings.ToLower(videoDetails["title"].(string)), " ", "_", -1)
-	format := s[strings.Index(s, "/")+1 : strings.Index(s, ";")]
-	downloadURL := moreData["url"].(string)
-
-	// Remove characters like ':' and '?' in the video title
-	re := regexp.MustCompile(`[^A-Za-z0-9.\_\-]`)
-	fileName := re.ReplaceAllString(title+"."+format, "")
 	path := filepath.Join(outputDirectory, fileName)
 
 	if verbose {
@@ -334,6 +346,7 @@ func DownloadYTVideo(videoURL string, outputDirectory string, verbose, audio boo
 	client := &http.Client{}
 
 	// Determine the video size in bytes
+	var resp *http.Response
 	resp, err = client.Head(downloadURL)
 	if err != nil {
 		return errors.New(fmt.Sprintf("GoTube: Failed to issue HEAD request for download URL: %v", err))
