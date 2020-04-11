@@ -241,14 +241,18 @@ func ParseStr(encodedString string, result map[string]interface{}) error {
 	return nil
 }
 
+func info(text string) {
+	if verbose {
+		fmt.Println("GoTube: " + text)
+	}
+}
+
 func getMetaData(id string) (string, string, error) {
 	log.Printf("getMetaData for ID: %v", id)
 
 	metaURL := "https://www.youtube.com/get_video_info?video_id=" + id
 
-	if verbose {
-		fmt.Printf("GoTube: Making a HTTP GET request thru %s...\n", metaURL)
-	}
+	info(fmt.Sprintf("Making a HTTP GET request thru %s...", metaURL))
 
 	resp, err := http.Get(metaURL)
 	var fileName string
@@ -337,9 +341,7 @@ func DownloadYTVideo(videoURL string, outputDirectory string, audio bool) error 
 	}
 	path := filepath.Join(outputDirectory, fileName)
 
-	if verbose {
-		fmt.Printf("GoTube: Creating a file %s...\n", path)
-	}
+	info(fmt.Sprintf("Creating a file %s...", path))
 
 	output, err := os.Create(path)
 	if err != nil {
@@ -365,9 +367,7 @@ func DownloadYTVideo(videoURL string, outputDirectory string, audio bool) error 
 	request.Header.Set("Content-Type", "application/zip")
 	request.Header.Set("Content-Transfer-Encoding", "binary")
 
-	if verbose {
-		fmt.Printf("GoTube: Making another HTTP GET Request thru %s...\n", downloadURL)
-	}
+	info(fmt.Sprintf("Making another HTTP GET Request thru %s...", downloadURL))
 
 	resp, err = client.Do(request)
 	if err != nil {
@@ -392,8 +392,8 @@ func DownloadYTVideo(videoURL string, outputDirectory string, audio bool) error 
 
 	if err != nil {
 		return errors.New("GoTube: Unable to download the video! :(")
-	} else if verbose {
-		fmt.Println("GoTube: The video downloaded successfully! :))")
+	} else {
+		info(fmt.Sprint("The video downloaded successfully! :))"))
 	}
 
 	if audio {
@@ -407,9 +407,7 @@ func DownloadYTVideo(videoURL string, outputDirectory string, audio bool) error 
 func saveAudio(outputDirectory, fileName, path string) error {
 	audioFile := filepath.Join(outputDirectory, strings.TrimRight(fileName, filepath.Ext(fileName))+".mp3")
 
-	if verbose {
-		fmt.Printf("GoTube: Creating a file %s...\n", audioFile)
-	}
+	info(fmt.Sprintf("Creating a file %s...", audioFile))
 
 	ffmpeg, err := exec.LookPath("ffmpeg")
 	if err != nil {
@@ -427,8 +425,8 @@ func saveAudio(outputDirectory, fileName, path string) error {
 
 	if err != nil {
 		return err
-	} else if verbose {
-		fmt.Println("GoTube: The video audio extracted successfully! :))")
+	} else {
+		info(fmt.Sprint("The video audio extracted successfully! :))"))
 	}
 	return nil
 }
