@@ -58,6 +58,7 @@ import (
 )
 
 var percent int
+var verbose bool
 
 type WriteCounter struct {
 	BytesDownloaded int64
@@ -240,7 +241,7 @@ func ParseStr(encodedString string, result map[string]interface{}) error {
 	return nil
 }
 
-func getMetaData(id string, verbose bool) (string, string, error) {
+func getMetaData(id string) (string, string, error) {
 	log.Printf("getMetaData for ID: %v", id)
 
 	metaURL := "https://www.youtube.com/get_video_info?video_id=" + id
@@ -311,7 +312,7 @@ func getMetaData(id string, verbose bool) (string, string, error) {
 	return fileName, downloadURL, nil
 }
 
-func DownloadYTVideo(videoURL string, outputDirectory string, verbose, audio bool) error {
+func DownloadYTVideo(videoURL string, outputDirectory string, audio bool) error {
 	isMatch, _ := regexp.MatchString(`https://www\.youtube\.com/watch\?v=[\w-]+`, videoURL) // TODO need better regex pattern
 
 	if !isMatch {
@@ -330,7 +331,7 @@ func DownloadYTVideo(videoURL string, outputDirectory string, verbose, audio boo
 
 	id, _ := GetVideoID(videoURL)
 
-	fileName, downloadURL, err := getMetaData(id, verbose)
+	fileName, downloadURL, err := getMetaData(id)
 	if err != nil {
 		return err
 	}
@@ -396,14 +397,14 @@ func DownloadYTVideo(videoURL string, outputDirectory string, verbose, audio boo
 	}
 
 	if audio {
-		err := saveAudio(outputDirectory, fileName, path, verbose)
+		err := saveAudio(outputDirectory, fileName, path)
 		return err
 	}
 
 	return nil
 }
 
-func saveAudio(outputDirectory, fileName, path string, verbose bool) error {
+func saveAudio(outputDirectory, fileName, path string) error {
 	audioFile := filepath.Join(outputDirectory, strings.TrimRight(fileName, filepath.Ext(fileName))+".mp3")
 
 	if verbose {
@@ -432,7 +433,7 @@ func saveAudio(outputDirectory, fileName, path string, verbose bool) error {
 	return nil
 }
 
-func Download(URLs []string, outputDirectory string, verbose bool, audio bool) error {
+func Download(URLs []string, outputDirectory string, audio bool) error {
 	eg, ctx := errgroup.WithContext(context.Background())
 	for _, url := range URLs {
 		log.Printf("URL: %s", url)
@@ -443,7 +444,7 @@ func Download(URLs []string, outputDirectory string, verbose bool, audio bool) e
 				fmt.Println("Canceled:", url)
 				return nil
 			default:
-				err := DownloadYTVideo(url, outputDirectory, verbose, audio)
+				err := DownloadYTVideo(url, outputDirectory, audio)
 				fmt.Println(err)
 				return err
 			}
@@ -459,7 +460,6 @@ func main() {
 	}
 
 	var outputDirectory string
-	var verbose bool
 	var debug bool
 	var audio bool
 
@@ -481,5 +481,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	Download(args, outputDirectory, verbose, audio)
+	Download(args, outputDirectory, audio)
 }
