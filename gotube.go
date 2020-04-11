@@ -242,6 +242,7 @@ func ParseStr(encodedString string, result map[string]interface{}) error {
 }
 
 func info(text string) {
+	log.Printf("INFO: " + text)
 	if verbose {
 		fmt.Println("GoTube: " + text)
 	}
