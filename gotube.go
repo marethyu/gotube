@@ -380,33 +380,39 @@ func DownloadYTVideo(videoURL string, outputDirectory string, verbose, audio boo
 	}
 
 	if audio {
-		audioFile := filepath.Join(outputDirectory, strings.TrimRight(fileName, filepath.Ext(fileName))+".mp3")
-
-		if verbose {
-			fmt.Printf("GoTube: Creating a file %s...\n", audioFile)
-		}
-
-		ffmpeg, err := exec.LookPath("ffmpeg")
-		if err != nil {
-			return errors.New("ffmpeg not found")
-		}
-
-		cmd := exec.Command(ffmpeg, "-i", path, "-vn", "-ar", "44100", "-ac", "1", "-b:a", "32k", "-f", "mp3", audioFile)
-
-		if verbose {
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-		}
-
-		err = cmd.Run()
-
-		if err != nil {
-			return err
-		} else if verbose {
-			fmt.Println("GoTube: The video audio extracted successfully! :))")
-		}
+		err := saveAudio(outputDirectory, fileName, path, verbose)
+		return err
 	}
 
+	return nil
+}
+
+func saveAudio(outputDirectory, fileName, path string, verbose bool) error {
+	audioFile := filepath.Join(outputDirectory, strings.TrimRight(fileName, filepath.Ext(fileName))+".mp3")
+
+	if verbose {
+		fmt.Printf("GoTube: Creating a file %s...\n", audioFile)
+	}
+
+	ffmpeg, err := exec.LookPath("ffmpeg")
+	if err != nil {
+		return errors.New("ffmpeg not found")
+	}
+
+	cmd := exec.Command(ffmpeg, "-i", path, "-vn", "-ar", "44100", "-ac", "1", "-b:a", "32k", "-f", "mp3", audioFile)
+
+	if verbose {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
+
+	err = cmd.Run()
+
+	if err != nil {
+		return err
+	} else if verbose {
+		fmt.Println("GoTube: The video audio extracted successfully! :))")
+	}
 	return nil
 }
 
