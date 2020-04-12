@@ -58,6 +58,7 @@ import (
 )
 
 var percent int
+var verbose bool
 
 type WriteCounter struct {
 	BytesDownloaded int64
@@ -240,8 +241,21 @@ func ParseStr(encodedString string, result map[string]interface{}) error {
 	return nil
 }
 
-func getMetaData(u string) (string, string, error) {
-	resp, err := http.Get(u)
+func info(text string) {
+	log.Printf("INFO: " + text)
+	if verbose {
+		fmt.Println("GoTube: " + text)
+	}
+}
+
+func getMetaData(id string) (string, string, error) {
+	log.Printf("getMetaData for ID: %v", id)
+
+	metaURL := "https://www.youtube.com/get_video_info?video_id=" + id
+
+	info(fmt.Sprintf("Making a HTTP GET request thru %s...", metaURL))
+
+	resp, err := http.Get(metaURL)
 	var fileName string
 	var downloadURL string
 
@@ -303,7 +317,7 @@ func getMetaData(u string) (string, string, error) {
 	return fileName, downloadURL, nil
 }
 
-func DownloadYTVideo(videoURL string, outputDirectory string, verbose, audio bool) error {
+func DownloadYTVideo(videoURL string, outputDirectory string, audio bool) error {
 	isMatch, _ := regexp.MatchString(`https://www\.youtube\.com/watch\?v=[\w-]+`, videoURL) // TODO need better regex pattern
 
 	if !isMatch {
@@ -321,21 +335,14 @@ func DownloadYTVideo(videoURL string, outputDirectory string, verbose, audio boo
 	}
 
 	id, _ := GetVideoID(videoURL)
-	u := "https://www.youtube.com/get_video_info?video_id=" + id
 
-	if verbose {
-		fmt.Printf("GoTube: Making a HTTP GET request thru %s...\n", u)
-	}
-
-	fileName, downloadURL, err := getMetaData(u)
+	fileName, downloadURL, err := getMetaData(id)
 	if err != nil {
 		return err
 	}
 	path := filepath.Join(outputDirectory, fileName)
 
-	if verbose {
-		fmt.Printf("GoTube: Creating a file %s...\n", path)
-	}
+	info(fmt.Sprintf("Creating a file %s...", path))
 
 	output, err := os.Create(path)
 	if err != nil {
@@ -361,9 +368,7 @@ func DownloadYTVideo(videoURL string, outputDirectory string, verbose, audio boo
 	request.Header.Set("Content-Type", "application/zip")
 	request.Header.Set("Content-Transfer-Encoding", "binary")
 
-	if verbose {
-		fmt.Printf("GoTube: Making another HTTP GET Request thru %s...\n", downloadURL)
-	}
+	info(fmt.Sprintf("Making another HTTP GET Request thru %s...", downloadURL))
 
 	resp, err = client.Do(request)
 	if err != nil {
@@ -388,24 +393,22 @@ func DownloadYTVideo(videoURL string, outputDirectory string, verbose, audio boo
 
 	if err != nil {
 		return errors.New("GoTube: Unable to download the video! :(")
-	} else if verbose {
-		fmt.Println("GoTube: The video downloaded successfully! :))")
+	} else {
+		info(fmt.Sprint("The video downloaded successfully! :))"))
 	}
 
 	if audio {
-		err := saveAudio(outputDirectory, fileName, path, verbose)
+		err := saveAudio(outputDirectory, fileName, path)
 		return err
 	}
 
 	return nil
 }
 
-func saveAudio(outputDirectory, fileName, path string, verbose bool) error {
+func saveAudio(outputDirectory, fileName, path string) error {
 	audioFile := filepath.Join(outputDirectory, strings.TrimRight(fileName, filepath.Ext(fileName))+".mp3")
 
-	if verbose {
-		fmt.Printf("GoTube: Creating a file %s...\n", audioFile)
-	}
+	info(fmt.Sprintf("Creating a file %s...", audioFile))
 
 	ffmpeg, err := exec.LookPath("ffmpeg")
 	if err != nil {
@@ -423,13 +426,13 @@ func saveAudio(outputDirectory, fileName, path string, verbose bool) error {
 
 	if err != nil {
 		return err
-	} else if verbose {
-		fmt.Println("GoTube: The video audio extracted successfully! :))")
+	} else {
+		info(fmt.Sprint("The video audio extracted successfully! :))"))
 	}
 	return nil
 }
 
-func Download(URLs []string, outputDirectory string, verbose bool, audio bool) error {
+func Download(URLs []string, outputDirectory string, audio bool) error {
 	eg, ctx := errgroup.WithContext(context.Background())
 	for _, url := range URLs {
 		log.Printf("URL: %s", url)
@@ -440,7 +443,7 @@ func Download(URLs []string, outputDirectory string, verbose bool, audio bool) e
 				fmt.Println("Canceled:", url)
 				return nil
 			default:
-				err := DownloadYTVideo(url, outputDirectory, verbose, audio)
+				err := DownloadYTVideo(url, outputDirectory, audio)
 				fmt.Println(err)
 				return err
 			}
@@ -456,7 +459,6 @@ func main() {
 	}
 
 	var outputDirectory string
-	var verbose bool
 	var debug bool
 	var audio bool
 
@@ -478,5 +480,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	Download(args, outputDirectory, verbose, audio)
+	Download(args, outputDirectory, audio)
 }
