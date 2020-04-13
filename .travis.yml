@@ -3,4 +3,4 @@ install:
   - go get -u golang.org/x/lint/golint
 script:
   - test -z $(gofmt -l gotube.go)
-  - golint > golint.out && cat golint.out && test -z goling.out
+  - golint > golint.out && cat golint.out && test -z "$(cat golint.out)"
