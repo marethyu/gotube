@@ -62,12 +62,12 @@ var verbose bool
 var audio bool
 var outputDirectory string
 
-type WriteCounter struct {
+type writeCounter struct {
 	BytesDownloaded int64
 	TotalBytes      int64
 }
 
-func DisplayStatus() {
+func displayStatus() {
 	for percent < 100 {
 		fmt.Printf("\rGoTube: Download progress: %%%d complete", percent)
 	}
@@ -75,7 +75,7 @@ func DisplayStatus() {
 	fmt.Println("\rGoTube: Download progress: %100 complete")
 }
 
-func (pWc *WriteCounter) Write(b []byte) (n int, err error) {
+func (pWc *writeCounter) Write(b []byte) (n int, err error) {
 	n = len(b)
 	pWc.BytesDownloaded += int64(n)
 	percent = int(math.Round(float64(pWc.BytesDownloaded) * 100.0 / float64(pWc.TotalBytes)))
@@ -83,27 +83,27 @@ func (pWc *WriteCounter) Write(b []byte) (n int, err error) {
 }
 
 // Check if the given file/directory exists
-func Exists(path string) (bool, error, os.FileInfo) {
+func exists(path string) (bool, os.FileInfo, error) {
 	fi, err := os.Stat(path)
 
 	if err == nil {
-		return true, nil, fi
+		return true, fi, nil
 	}
 	if os.IsNotExist(err) {
-		return false, nil, fi
+		return false, fi, nil
 	}
 
-	return true, err, fi
+	return true, fi, err
 }
 
-func GetVideoID(videoURL string) (string, error) {
+func getVideoID(videoURL string) (string, error) {
 	u, err := url.Parse(videoURL)
 	return u.Query()["v"][0], err
 }
 
 // Go's version of PHP's parse_str
 // Shamelessly stolen from https://github.com/syyongx/php2go/blob/master/php.go
-func ParseStr(encodedString string, result map[string]interface{}) error {
+func parseStr(encodedString string, result map[string]interface{}) error {
 	// build nested map.
 	var build func(map[string]interface{}, []string, interface{}) error
 
@@ -274,7 +274,7 @@ func getMetaData(id string) (string, string, error) {
 	log.Printf("received: %v", string(byteArray))
 
 	data := make(map[string]interface{})
-	err = ParseStr(string(byteArray[:]), data)
+	err = parseStr(string(byteArray[:]), data)
 	if err != nil {
 		return fileName, downloadURL, errors.New(fmt.Sprintf("GoTube: Failed to parse video info response: %v", err))
 	}
@@ -319,14 +319,14 @@ func getMetaData(id string) (string, string, error) {
 	return fileName, downloadURL, nil
 }
 
-func DownloadYTVideo(videoURL string) error {
+func downloadYTVideo(videoURL string) error {
 	isMatch, _ := regexp.MatchString(`https://www\.youtube\.com/watch\?v=[\w-]+`, videoURL) // TODO need better regex pattern
 
 	if !isMatch {
 		return errors.New("GoTube: Invalid YouTube URL!")
 	}
 
-	doesExist, _, fi := Exists(outputDirectory)
+	doesExist, fi, _ := exists(outputDirectory)
 
 	if !doesExist {
 		return errors.New("GoTube: The output directory doesn't exist!")
@@ -336,7 +336,7 @@ func DownloadYTVideo(videoURL string) error {
 		return errors.New("GoTube: The directory is a file!")
 	}
 
-	id, _ := GetVideoID(videoURL)
+	id, _ := getVideoID(videoURL)
 
 	fileName, downloadURL, err := getMetaData(id)
 	if err != nil {
@@ -387,8 +387,8 @@ func DownloadYTVideo(videoURL string) error {
 	if !verbose {
 		body = resp.Body
 	} else {
-		go DisplayStatus()
-		body = io.TeeReader(resp.Body, &WriteCounter{0, videoSize}) // Pipe stream
+		go displayStatus()
+		body = io.TeeReader(resp.Body, &writeCounter{0, videoSize}) // Pipe stream
 	}
 
 	_, err = io.Copy(output, body)
@@ -434,7 +434,7 @@ func saveAudio(outputDirectory, fileName, path string) error {
 	return nil
 }
 
-func Download(URLs []string) error {
+func download(URLs []string) error {
 	eg, ctx := errgroup.WithContext(context.Background())
 	for _, url := range URLs {
 		log.Printf("URL: %s", url)
@@ -445,7 +445,7 @@ func Download(URLs []string) error {
 				fmt.Println("Canceled:", url)
 				return nil
 			default:
-				err := DownloadYTVideo(url)
+				err := downloadYTVideo(url)
 				fmt.Println(err)
 				return err
 			}
@@ -480,5 +480,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	Download(args)
+	download(args)
 }
