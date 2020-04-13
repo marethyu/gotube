@@ -262,12 +262,12 @@ func getMetaData(id string) (string, string, error) {
 	var downloadURL string
 
 	if err != nil {
-		return fileName, downloadURL, errors.New(fmt.Sprintf("GoTube: Failed to acquire video info: %v", err))
+		return fileName, downloadURL, fmt.Errorf("GoTube: Failed to acquire video info: %v", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return fileName, downloadURL, errors.New(fmt.Sprintf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode)))
+		return fileName, downloadURL, fmt.Errorf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode))
 	}
 
 	byteArray, _ := ioutil.ReadAll(resp.Body)
@@ -276,7 +276,7 @@ func getMetaData(id string) (string, string, error) {
 	data := make(map[string]interface{})
 	err = parseStr(string(byteArray[:]), data)
 	if err != nil {
-		return fileName, downloadURL, errors.New(fmt.Sprintf("GoTube: Failed to parse video info response: %v", err))
+		return fileName, downloadURL, fmt.Errorf("GoTube: Failed to parse video info response: %v", err)
 	}
 
 	// We only need to retrieve video title, format and download url nothing else
@@ -285,7 +285,7 @@ func getMetaData(id string) (string, string, error) {
 	var videoData map[string]interface{}
 	err = json.Unmarshal([]byte(data["player_response"].(string)), &videoData)
 	if err != nil {
-		return fileName, downloadURL, errors.New(fmt.Sprintf("GoTube: Failed to unmarshal video info data: %v", err))
+		return fileName, downloadURL, fmt.Errorf("GoTube: Failed to unmarshal video info data: %v", err)
 	}
 
 	log.Printf("videoData: %v", videoData)
@@ -323,17 +323,17 @@ func downloadYTVideo(videoURL string) error {
 	isMatch, _ := regexp.MatchString(`https://www\.youtube\.com/watch\?v=[\w-]+`, videoURL) // TODO need better regex pattern
 
 	if !isMatch {
-		return errors.New("GoTube: Invalid YouTube URL!")
+		return fmt.Errorf("GoTube: Invalid YouTube URL")
 	}
 
 	doesExist, fi, _ := exists(outputDirectory)
 
 	if !doesExist {
-		return errors.New("GoTube: The output directory doesn't exist!")
+		return fmt.Errorf("GoTube: The output directory doesn't exist")
 	}
 
 	if !fi.Mode().IsDir() {
-		return errors.New("GoTube: The directory is a file!")
+		return fmt.Errorf("GoTube: The directory is a file")
 	}
 
 	id, _ := getVideoID(videoURL)
@@ -348,7 +348,7 @@ func downloadYTVideo(videoURL string) error {
 
 	output, err := os.Create(path)
 	if err != nil {
-		return errors.New(fmt.Sprintf("GoTube: Failed to create video file: %v", err))
+		return fmt.Errorf("GoTube: Failed to create video file: %v", err)
 	}
 	defer output.Close()
 
@@ -358,7 +358,7 @@ func downloadYTVideo(videoURL string) error {
 	var resp *http.Response
 	resp, err = client.Head(downloadURL)
 	if err != nil {
-		return errors.New(fmt.Sprintf("GoTube: Failed to issue HEAD request for download URL: %v", err))
+		return fmt.Errorf("GoTube: Failed to issue HEAD request for download URL: %v", err)
 	}
 
 	videoSize, _ := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
@@ -379,7 +379,7 @@ func downloadYTVideo(videoURL string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode)))
+		return fmt.Errorf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode))
 	}
 
 	var body io.Reader
