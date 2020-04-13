@@ -38,7 +38,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -296,7 +295,7 @@ func getMetaData(id string) (string, string, error) {
 	log.Printf("streamingData: %v", videoData["streamingData"])
 
 	if videoData["streamingData"] == nil {
-		return fileName, downloadURL, errors.New(fmt.Sprint("GoTube: streamingData is missing from this video"))
+		return fileName, downloadURL, fmt.Errorf("GoTube: streamingData is missing from this video")
 	}
 
 	videoDetails := videoData["videoDetails"].(map[string]interface{})
@@ -394,10 +393,9 @@ func downloadYTVideo(videoURL string) error {
 	_, err = io.Copy(output, body)
 
 	if err != nil {
-		return errors.New("GoTube: Unable to download the video! :(")
-	} else {
-		info(fmt.Sprint("The video downloaded successfully! :))"))
+		return fmt.Errorf("GoTube: Unable to download the video! :(")
 	}
+	info(fmt.Sprint("The video downloaded successfully! :))"))
 
 	if audio {
 		err := saveAudio(outputDirectory, fileName, path)
@@ -414,7 +412,7 @@ func saveAudio(outputDirectory, fileName, path string) error {
 
 	ffmpeg, err := exec.LookPath("ffmpeg")
 	if err != nil {
-		return errors.New("ffmpeg not found")
+		return fmt.Errorf("ffmpeg not found")
 	}
 
 	cmd := exec.Command(ffmpeg, "-i", path, "-vn", "-ar", "44100", "-ac", "1", "-b:a", "32k", "-f", "mp3", audioFile)
@@ -428,9 +426,9 @@ func saveAudio(outputDirectory, fileName, path string) error {
 
 	if err != nil {
 		return err
-	} else {
-		info(fmt.Sprint("The video audio extracted successfully! :))"))
 	}
+
+	info(fmt.Sprint("The video audio extracted successfully! :))"))
 	return nil
 }
 
