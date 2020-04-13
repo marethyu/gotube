@@ -1,2 +1,6 @@
 language: go
-script: test -z $(gofmt -l gotube.go)
+install:
+  - go get -u golang.org/x/lint/golint
+script:
+  - test -z $(gofmt -l gotube.go)
+  - test -z "$(golint)"
