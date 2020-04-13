@@ -59,6 +59,7 @@ import (
 
 var percent int
 var verbose bool
+var audio bool
 
 type WriteCounter struct {
 	BytesDownloaded int64
@@ -317,7 +318,7 @@ func getMetaData(id string) (string, string, error) {
 	return fileName, downloadURL, nil
 }
 
-func DownloadYTVideo(videoURL string, outputDirectory string, audio bool) error {
+func DownloadYTVideo(videoURL string, outputDirectory string) error {
 	isMatch, _ := regexp.MatchString(`https://www\.youtube\.com/watch\?v=[\w-]+`, videoURL) // TODO need better regex pattern
 
 	if !isMatch {
@@ -432,7 +433,7 @@ func saveAudio(outputDirectory, fileName, path string) error {
 	return nil
 }
 
-func Download(URLs []string, outputDirectory string, audio bool) error {
+func Download(URLs []string, outputDirectory string) error {
 	eg, ctx := errgroup.WithContext(context.Background())
 	for _, url := range URLs {
 		log.Printf("URL: %s", url)
@@ -443,7 +444,7 @@ func Download(URLs []string, outputDirectory string, audio bool) error {
 				fmt.Println("Canceled:", url)
 				return nil
 			default:
-				err := DownloadYTVideo(url, outputDirectory, audio)
+				err := DownloadYTVideo(url, outputDirectory)
 				fmt.Println(err)
 				return err
 			}
@@ -460,7 +461,6 @@ func main() {
 
 	var outputDirectory string
 	var debug bool
-	var audio bool
 
 	flag.StringVar(&outputDirectory, "outdir", ".", "Directory where you want the video to be downloaded")
 	flag.BoolVar(&verbose, "v", false, "If true, GoTube will display detailed download process")
@@ -480,5 +480,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	Download(args, outputDirectory, audio)
+	Download(args, outputDirectory)
 }
