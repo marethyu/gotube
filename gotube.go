@@ -314,9 +314,13 @@ func getMetaData(id string) (string, string, error) {
 }
 
 func checkParameters(videoURL string) (string, error) {
-	isMatch, _ := regexp.MatchString(`https://www\.youtube\.com/watch\?v=[\w-]+`, videoURL) // TODO need better regex pattern
 	var id string
 	var err error
+
+	isMatch, err := regexp.MatchString(`https://www\.youtube\.com/watch\?v=[\w-]+`, videoURL) // TODO need better regex pattern
+	if err != nil {
+		return id, err
+	}
 
 	if !isMatch {
 		return id, fmt.Errorf("GoTube: Invalid YouTube URL")
