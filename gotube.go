@@ -81,20 +81,6 @@ func (pWc *writeCounter) Write(b []byte) (n int, err error) {
 	return
 }
 
-// Check if the given file/directory exists
-func exists(path string) (bool, os.FileInfo, error) {
-	fi, err := os.Stat(path)
-
-	if err == nil {
-		return true, fi, nil
-	}
-	if os.IsNotExist(err) {
-		return false, fi, nil
-	}
-
-	return true, fi, err
-}
-
 // Go's version of PHP's parse_str
 // Shamelessly stolen from https://github.com/syyongx/php2go/blob/master/php.go
 func parseStr(encodedString string, result map[string]interface{}) error {
@@ -326,13 +312,16 @@ func checkParameters(videoURL string) (string, error) {
 		return id, fmt.Errorf("GoTube: Invalid YouTube URL")
 	}
 
-	doesExist, fi, _ := exists(outputDirectory)
-
-	if !doesExist {
-		return id, fmt.Errorf("GoTube: The output directory '%v' doesn't exist", outputDirectory)
+	// Check if the given file/directory exists
+	var fileInfo os.FileInfo
+	fileInfo, err = os.Stat(outputDirectory)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return id, fmt.Errorf("GoTube: The output directory '%v' doesn't exist", outputDirectory)
+		}
+		return id, err
 	}
-
-	if !fi.Mode().IsDir() {
+	if !fileInfo.Mode().IsDir() {
 		return id, fmt.Errorf("GoTube: The directory '%v' is a file", outputDirectory)
 	}
 
