@@ -434,16 +434,16 @@ func saveAudio(outputDirectory, fileName, path string) error {
 
 func download(URLs []string) error {
 	eg, ctx := errgroup.WithContext(context.Background())
-	for _, url := range URLs {
-		log.Printf("URL: %s", url)
-		url := url
+	for _, currentURL := range URLs {
+		log.Printf("URL: %s", currentURL)
+		currentURL := currentURL
 		eg.Go(func() error {
 			select {
 			case <-ctx.Done():
-				fmt.Println("Canceled:", url)
+				fmt.Println("Canceled:", currentURL)
 				return nil
 			default:
-				err := downloadYTVideo(url)
+				err := downloadYTVideo(currentURL)
 				fmt.Println(err)
 				return err
 			}
