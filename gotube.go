@@ -27,7 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************************
- * GoTube: Simple YouTube Video Downloader (v1.1)
+ * GoTube: Simple YouTube Video Downloader (v1.2)
  *
  * REQUIRES: ffmpeg
  * WARNING: The download process might be very slow and will destroy your computer if it happens. (LOL)
