@@ -81,25 +81,6 @@ func (pWc *writeCounter) Write(b []byte) (n int, err error) {
 	return
 }
 
-// Check if the given file/directory exists
-func exists(path string) (bool, os.FileInfo, error) {
-	fi, err := os.Stat(path)
-
-	if err == nil {
-		return true, fi, nil
-	}
-	if os.IsNotExist(err) {
-		return false, fi, nil
-	}
-
-	return true, fi, err
-}
-
-func getVideoID(videoURL string) (string, error) {
-	u, err := url.Parse(videoURL)
-	return u.Query()["v"][0], err
-}
-
 // Go's version of PHP's parse_str
 // Shamelessly stolen from https://github.com/syyongx/php2go/blob/master/php.go
 func parseStr(encodedString string, result map[string]interface{}) error {
@@ -295,7 +276,7 @@ func getMetaData(id string) (string, string, error) {
 	log.Printf("streamingData: %v", videoData["streamingData"])
 
 	if videoData["streamingData"] == nil {
-		return fileName, downloadURL, fmt.Errorf("GoTube: streamingData is missing from this video")
+		return fileName, downloadURL, fmt.Errorf("GoTube: streamingData is missing from this video '%v'", id)
 	}
 
 	videoDetails := videoData["videoDetails"].(map[string]interface{})
@@ -318,24 +299,47 @@ func getMetaData(id string) (string, string, error) {
 	return fileName, downloadURL, nil
 }
 
-func downloadYTVideo(videoURL string) error {
-	isMatch, _ := regexp.MatchString(`https://www\.youtube\.com/watch\?v=[\w-]+`, videoURL) // TODO need better regex pattern
+func checkParameters(videoURL string) (string, error) {
+	var id string
+	var err error
+
+	isMatch, err := regexp.MatchString(`https://www\.youtube\.com/watch\?v=[\w-]+`, videoURL) // TODO need better regex pattern
+	if err != nil {
+		return id, err
+	}
 
 	if !isMatch {
-		return fmt.Errorf("GoTube: Invalid YouTube URL")
+		return id, fmt.Errorf("GoTube: Invalid YouTube URL")
 	}
 
-	doesExist, fi, _ := exists(outputDirectory)
-
-	if !doesExist {
-		return fmt.Errorf("GoTube: The output directory doesn't exist")
+	// Check if the given file/directory exists
+	var fileInfo os.FileInfo
+	fileInfo, err = os.Stat(outputDirectory)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return id, fmt.Errorf("GoTube: The output directory '%v' doesn't exist", outputDirectory)
+		}
+		return id, err
+	}
+	if !fileInfo.Mode().IsDir() {
+		return id, fmt.Errorf("GoTube: The directory '%v' is a file", outputDirectory)
 	}
 
-	if !fi.Mode().IsDir() {
-		return fmt.Errorf("GoTube: The directory is a file")
+	var reprURL *url.URL
+	reprURL, err = url.Parse(videoURL)
+	if err != nil {
+		return id, err
 	}
+	id = reprURL.Query()["v"][0]
 
-	id, _ := getVideoID(videoURL)
+	return id, nil
+}
+
+func downloadYTVideo(videoURL string) error {
+	id, err := checkParameters(videoURL)
+	if err != nil {
+		return err
+	}
 
 	fileName, downloadURL, err := getMetaData(id)
 	if err != nil {
@@ -354,8 +358,7 @@ func downloadYTVideo(videoURL string) error {
 	client := &http.Client{}
 
 	// Determine the video size in bytes
-	var resp *http.Response
-	resp, err = client.Head(downloadURL)
+	resp, err := client.Head(downloadURL)
 	if err != nil {
 		return fmt.Errorf("GoTube: Failed to issue HEAD request for download URL: %v", err)
 	}
@@ -434,16 +437,16 @@ func saveAudio(outputDirectory, fileName, path string) error {
 
 func download(URLs []string) error {
 	eg, ctx := errgroup.WithContext(context.Background())
-	for _, url := range URLs {
-		log.Printf("URL: %s", url)
-		url := url
+	for _, currentURL := range URLs {
+		log.Printf("URL: %s", currentURL)
+		currentURL := currentURL
 		eg.Go(func() error {
 			select {
 			case <-ctx.Done():
-				fmt.Println("Canceled:", url)
+				fmt.Println("Canceled:", currentURL)
 				return nil
 			default:
-				err := downloadYTVideo(url)
+				err := downloadYTVideo(currentURL)
 				fmt.Println(err)
 				return err
 			}
@@ -469,7 +472,7 @@ func main() {
 	args := flag.Args()
 
 	if debug {
-		log.SetPrefix("\n\n")
+		log.SetPrefix("\n")
 	} else {
 		log.SetOutput(ioutil.Discard)
 	}
