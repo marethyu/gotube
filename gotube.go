@@ -318,7 +318,7 @@ func getMetaData(id string) (string, string, error) {
 	return fileName, downloadURL, nil
 }
 
-func downloadYTVideo(videoURL string) error {
+func checkParameters(videoURL string) error {
 	isMatch, _ := regexp.MatchString(`https://www\.youtube\.com/watch\?v=[\w-]+`, videoURL) // TODO need better regex pattern
 
 	if !isMatch {
@@ -328,11 +328,20 @@ func downloadYTVideo(videoURL string) error {
 	doesExist, fi, _ := exists(outputDirectory)
 
 	if !doesExist {
-		return fmt.Errorf("GoTube: The output directory doesn't exist")
+		return fmt.Errorf("GoTube: The output directory '%v' doesn't exist", outputDirectory)
 	}
 
 	if !fi.Mode().IsDir() {
-		return fmt.Errorf("GoTube: The directory is a file")
+		return fmt.Errorf("GoTube: The directory '%v' is a file", outputDirectory)
+	}
+
+	return nil
+}
+
+func downloadYTVideo(videoURL string) error {
+	err := checkParameters(videoURL)
+	if err != nil {
+		return err
 	}
 
 	id, _ := getVideoID(videoURL)
