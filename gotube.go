@@ -276,7 +276,7 @@ func getMetaData(id string) (string, string, error) {
 	log.Printf("streamingData: %v", videoData["streamingData"])
 
 	if videoData["streamingData"] == nil {
-		return fileName, downloadURL, fmt.Errorf("GoTube: streamingData is missing from this video")
+		return fileName, downloadURL, fmt.Errorf("GoTube: streamingData is missing from this video '%v'", id)
 	}
 
 	videoDetails := videoData["videoDetails"].(map[string]interface{})
@@ -358,8 +358,7 @@ func downloadYTVideo(videoURL string) error {
 	client := &http.Client{}
 
 	// Determine the video size in bytes
-	var resp *http.Response
-	resp, err = client.Head(downloadURL)
+	resp, err := client.Head(downloadURL)
 	if err != nil {
 		return fmt.Errorf("GoTube: Failed to issue HEAD request for download URL: %v", err)
 	}
@@ -473,7 +472,7 @@ func main() {
 	args := flag.Args()
 
 	if debug {
-		log.SetPrefix("\n\n")
+		log.SetPrefix("\n")
 	} else {
 		log.SetOutput(ioutil.Discard)
 	}
