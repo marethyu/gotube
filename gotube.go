@@ -95,11 +95,6 @@ func exists(path string) (bool, os.FileInfo, error) {
 	return true, fi, err
 }
 
-func getVideoID(videoURL string) (string, error) {
-	u, err := url.Parse(videoURL)
-	return u.Query()["v"][0], err
-}
-
 // Go's version of PHP's parse_str
 // Shamelessly stolen from https://github.com/syyongx/php2go/blob/master/php.go
 func parseStr(encodedString string, result map[string]interface{}) error {
@@ -318,33 +313,40 @@ func getMetaData(id string) (string, string, error) {
 	return fileName, downloadURL, nil
 }
 
-func checkParameters(videoURL string) error {
+func checkParameters(videoURL string) (string, error) {
 	isMatch, _ := regexp.MatchString(`https://www\.youtube\.com/watch\?v=[\w-]+`, videoURL) // TODO need better regex pattern
+	var id string
+	var err error
 
 	if !isMatch {
-		return fmt.Errorf("GoTube: Invalid YouTube URL")
+		return id, fmt.Errorf("GoTube: Invalid YouTube URL")
 	}
 
 	doesExist, fi, _ := exists(outputDirectory)
 
 	if !doesExist {
-		return fmt.Errorf("GoTube: The output directory '%v' doesn't exist", outputDirectory)
+		return id, fmt.Errorf("GoTube: The output directory '%v' doesn't exist", outputDirectory)
 	}
 
 	if !fi.Mode().IsDir() {
-		return fmt.Errorf("GoTube: The directory '%v' is a file", outputDirectory)
+		return id, fmt.Errorf("GoTube: The directory '%v' is a file", outputDirectory)
 	}
 
-	return nil
+	var reprURL *url.URL
+	reprURL, err = url.Parse(videoURL)
+	if err != nil {
+		return id, err
+	}
+	id = reprURL.Query()["v"][0]
+
+	return id, nil
 }
 
 func downloadYTVideo(videoURL string) error {
-	err := checkParameters(videoURL)
+	id, err := checkParameters(videoURL)
 	if err != nil {
 		return err
 	}
-
-	id, _ := getVideoID(videoURL)
 
 	fileName, downloadURL, err := getMetaData(id)
 	if err != nil {
