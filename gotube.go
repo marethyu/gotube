@@ -418,7 +418,7 @@ func saveAudio(outputDirectory, fileName, path string) error {
 		return fmt.Errorf("ffmpeg not found")
 	}
 
-	cmd := exec.Command(ffmpeg, "-i", path, "-vn", "-ar", "44100", "-ac", "1", "-b:a", "32k", "-f", "mp3", audioFile)
+	cmd := exec.Command(ffmpeg, "-i", path, "-vn", "-ar", "44100", "-ac", "1", "-b:a", "128k", "-f", "mp3", audioFile)
 
 	if verbose {
 		cmd.Stdout = os.Stdout
