@@ -1,6 +1,6 @@
 # GoTube
 
-[![Build Status](https://api.travis-ci.com/Marethyu12/gotube.svg?branch=master)](https://travis-ci.com/Marethyu12/gotube)
+[![Build Status](https://api.travis-ci.com/marethyu/gotube.svg?branch=master)](https://travis-ci.com/marethyu/gotube)
 ![](https://img.shields.io/badge/version-v1.2-blue)
 
 ## Overview
@@ -13,14 +13,14 @@ You can fetch one of the executable binaries (preferably latest one) from Releas
 
 You can also install GoTube directly from command line. Simply just type a command below in your terminal:
 ```markdown
-go get github.com/Marethyu12/gotube
+go get github.com/marethyu/gotube
 ```
 
 ## Building From Source
 
 Run the following commands:
 ```markdown
-git clone https://github.com/Marethyu12/gotube.git
+git clone https://github.com/marethyu/gotube.git
 cd gotube
 go get golang.org/x/sync/errgroup
 go build gotube.go
