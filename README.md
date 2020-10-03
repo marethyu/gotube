@@ -1,7 +1,7 @@
 # GoTube
 
 [![Build Status](https://api.travis-ci.com/marethyu/gotube.svg?branch=master)](https://travis-ci.com/marethyu/gotube)
-![](https://img.shields.io/badge/version-v1.2-blue)
+![](https://img.shields.io/badge/version-v1.3b-blue)
 
 ## Overview
 
@@ -63,6 +63,11 @@ gotube -v https://www.youtube.com/watch?v=wJMkvlTAzHc
 Option to download audio (requires ffmpeg, get one [here](https://github.com/adaptlearning/adapt_authoring/wiki/Installing-FFmpeg) if you don't have one installed):
 ```markdown
 gotube -a https://www.youtube.com/watch?v=Hh_HyNfyOKs
+```
+
+Option to download subtitles:
+```markdown
+gotube -s https://www.youtube.com/watch?v=1jb_N5e2yC8
 ```
 
 ## TODO
