@@ -61,23 +61,23 @@ import (
 var percent int
 var verbose bool
 var audio bool
-var subtitle bool
+var extractSubtitle bool
 var outputDirectory string
 
-type WriteCounter struct {
+type writeCounter struct {
 	BytesDownloaded int64
 	TotalBytes      int64
 }
 
-type Subtitle struct {
+type subtitle struct {
 	Start    float32 `xml:"start,attr"`
 	Duration float32 `xml:"dur,attr"`
 	Text     string  `xml:",chardata"`
 }
 
-type Transcript struct {
+type transcript struct {
 	XMLName   xml.Name   `xml:"transcript"`
-	Subtitles []Subtitle `xml:"text"`
+	Subtitles []subtitle `xml:"text"`
 }
 
 func displayStatus() {
@@ -88,7 +88,7 @@ func displayStatus() {
 	fmt.Println("\rGoTube: Download progress: %100 complete")
 }
 
-func (pWc *WriteCounter) Write(b []byte) (n int, err error) {
+func (pWc *writeCounter) Write(b []byte) (n int, err error) {
 	n = len(b)
 	pWc.BytesDownloaded += int64(n)
 	percent = int(math.Round(float64(pWc.BytesDownloaded) * 100.0 / float64(pWc.TotalBytes)))
@@ -331,9 +331,9 @@ func getMetaData(id string) (string, string, string, string, error) {
 
 	captionsData := videoData["captions"].(map[string]interface{})
 	captionsTracklistRenderer := captionsData["playerCaptionsTracklistRenderer"].(map[string]interface{})
-	baseUrl := captionsTracklistRenderer["captionTracks"].([]interface{})[0].(map[string]interface{})["baseUrl"].(string)
+	baseURL := captionsTracklistRenderer["captionTracks"].([]interface{})[0].(map[string]interface{})["baseUrl"].(string)
 
-	return fileName, format, downloadURL, baseUrl, nil
+	return fileName, format, downloadURL, baseURL, nil
 }
 
 func checkParameters(videoURL string) (string, error) {
@@ -378,7 +378,7 @@ func downloadYTVideo(videoURL string) error {
 		return err
 	}
 
-	fileName, format, downloadURL, baseUrl, err := getMetaData(id)
+	fileName, format, downloadURL, baseURL, err := getMetaData(id)
 	videoFileName := fileName + "." + format
 	if err != nil {
 		return err
@@ -428,7 +428,7 @@ func downloadYTVideo(videoURL string) error {
 		body = resp.Body
 	} else {
 		go displayStatus()
-		body = io.TeeReader(resp.Body, &WriteCounter{0, videoSize}) // Pipe stream
+		body = io.TeeReader(resp.Body, &writeCounter{0, videoSize}) // Pipe stream
 	}
 
 	_, err = io.Copy(output, body)
@@ -445,8 +445,8 @@ func downloadYTVideo(videoURL string) error {
 		}
 	}
 
-	if subtitle {
-		err := saveTranscript(outputDirectory, fileName, baseUrl)
+	if extractSubtitle {
+		err := saveTranscript(outputDirectory, fileName, baseURL)
 		if err != nil {
 			return err
 		}
@@ -482,11 +482,11 @@ func saveAudio(outputDirectory, fileName, path string) error {
 	return nil
 }
 
-func saveTranscript(outputDirectory, fileName, baseUrl string) error {
-	if xmlBytes, err := getXML(baseUrl); err != nil {
+func saveTranscript(outputDirectory, fileName, baseURL string) error {
+	if xmlBytes, err := getXML(baseURL); err != nil {
 		return fmt.Errorf("Gotube: Failed to get XML: %v", err)
 	} else {
-		var result Transcript
+		var result transcript
 		xml.Unmarshal(xmlBytes, &result)
 
 		transFile := filepath.Join(outputDirectory, fileName+".txt")
@@ -545,7 +545,7 @@ func main() {
 	flag.BoolVar(&verbose, "v", false, "If true, GoTube will display detailed download process")
 	flag.BoolVar(&debug, "d", false, "Turn on debug logging")
 	flag.BoolVar(&audio, "a", false, "If true, GoTube will download video's audio as well")
-	flag.BoolVar(&subtitle, "s", false, "If true, GoTube will extract video's subtitles (auto)")
+	flag.BoolVar(&extractSubtitle, "s", false, "If true, GoTube will extract video's subtitles (auto)")
 
 	flag.Parse()
 	args := flag.Args()
