@@ -61,6 +61,7 @@ import (
 var percent int
 var verbose bool
 var audio bool
+var subtitle bool
 var outputDirectory string
 
 type WriteCounter struct {
@@ -111,36 +112,6 @@ func getXML(url string) ([]byte, error) {
 	}
 
 	return data, nil
-}
-
-func saveTranscriptAsText(baseUrl, fileName string) error {
-	if xmlBytes, err := getXML(baseUrl); err != nil {
-		return fmt.Errorf("Gotube: Failed to get XML: %v", err)
-	} else {
-		var result Transcript
-		xml.Unmarshal(xmlBytes, &result)
-
-		f, err := os.Create(fileName)
-		if err != nil {
-			return fmt.Errorf("Gotube: Cannot create file %v", err)
-		}
-
-		for _, subtitle := range result.Subtitles {
-			if _, err := io.WriteString(f, html.UnescapeString(subtitle.Text)+"\n"); err != nil {
-				f.Close()
-				return fmt.Errorf("Gotube: Cannot write file %v", err)
-			}
-		}
-
-		err = f.Close()
-		if err != nil {
-			return fmt.Errorf("Gotube: Cannot close file %v", err)
-		} else {
-			info(fmt.Sprint("Subtitle file downloaded successfully!"))
-		}
-	}
-
-	return nil
 }
 
 // Go's version of PHP's parse_str
@@ -292,7 +263,7 @@ func info(text string) {
 	}
 }
 
-func getMetaData(id string) (string, string, error) {
+func getMetaData(id string) (string, string, string, string, error) {
 	log.Printf("getMetaData for ID: %v", id)
 
 	metaURL := "https://www.youtube.com/get_video_info?video_id=" + id
@@ -304,12 +275,12 @@ func getMetaData(id string) (string, string, error) {
 	var downloadURL string
 
 	if err != nil {
-		return fileName, downloadURL, fmt.Errorf("GoTube: Failed to acquire video info: %v", err)
+		return "", "", fileName, downloadURL, fmt.Errorf("GoTube: Failed to acquire video info: %v", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return fileName, downloadURL, fmt.Errorf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode))
+		return "", "", fileName, downloadURL, fmt.Errorf("GoTube: Bad status: %s (%s)", resp.Status, http.StatusText(resp.StatusCode))
 	}
 
 	byteArray, _ := ioutil.ReadAll(resp.Body)
@@ -318,16 +289,16 @@ func getMetaData(id string) (string, string, error) {
 	data := make(map[string]interface{})
 	err = parseStr(string(byteArray[:]), data)
 	if err != nil {
-		return fileName, downloadURL, fmt.Errorf("GoTube: Failed to parse video info response: %v", err)
+		return "", "", fileName, downloadURL, fmt.Errorf("GoTube: Failed to parse video info response: %v", err)
 	}
 
-	// We only need to retrieve video title, format and download url nothing else
+	// We only need to retrieve video title, format, download url, and subtitle url
 
 	log.Printf("player_response: %v", data["player_response"])
 	var videoData map[string]interface{}
 	err = json.Unmarshal([]byte(data["player_response"].(string)), &videoData)
 	if err != nil {
-		return fileName, downloadURL, fmt.Errorf("GoTube: Failed to unmarshal video info data: %v", err)
+		return "", "", fileName, downloadURL, fmt.Errorf("GoTube: Failed to unmarshal video info data: %v", err)
 	}
 
 	log.Printf("videoData: %v", videoData)
@@ -338,7 +309,7 @@ func getMetaData(id string) (string, string, error) {
 	log.Printf("streamingData: %v", videoData["streamingData"])
 
 	if videoData["streamingData"] == nil {
-		return fileName, downloadURL, fmt.Errorf("GoTube: streamingData is missing from this video '%v'", id)
+		return "", "", fileName, downloadURL, fmt.Errorf("GoTube: streamingData is missing from this video '%v'", id)
 	}
 
 	videoDetails := videoData["videoDetails"].(map[string]interface{})
@@ -356,15 +327,13 @@ func getMetaData(id string) (string, string, error) {
 
 	// Remove characters like ':' and '?' in the video title
 	re := regexp.MustCompile(`[^A-Za-z0-9.\_\-]`)
-	fileName = re.ReplaceAllString(title+"."+format, "")
+	fileName = re.ReplaceAllString(title, "")
 
-	/* XXX */
 	captionsData := videoData["captions"].(map[string]interface{})
 	captionsTracklistRenderer := captionsData["playerCaptionsTracklistRenderer"].(map[string]interface{})
 	baseUrl := captionsTracklistRenderer["captionTracks"].([]interface{})[0].(map[string]interface{})["baseUrl"].(string)
-	saveTranscriptAsText(baseUrl, re.ReplaceAllString(title+".txt", ""))
 
-	return fileName, downloadURL, nil
+	return fileName, format, downloadURL, baseUrl, nil
 }
 
 func checkParameters(videoURL string) (string, error) {
@@ -409,11 +378,12 @@ func downloadYTVideo(videoURL string) error {
 		return err
 	}
 
-	fileName, downloadURL, err := getMetaData(id)
+	fileName, format, downloadURL, baseUrl, err := getMetaData(id)
+	videoFileName := fileName + "." + format
 	if err != nil {
 		return err
 	}
-	path := filepath.Join(outputDirectory, fileName)
+	path := filepath.Join(outputDirectory, videoFileName)
 
 	info(fmt.Sprintf("Creating a file %s...", path))
 
@@ -436,7 +406,7 @@ func downloadYTVideo(videoURL string) error {
 	request, _ := http.NewRequest("GET", downloadURL, nil)
 	request.Header.Set("Cache-Control", "public")
 	request.Header.Set("Content-Description", "File Transfer")
-	request.Header.Set("Content-Disposition", "attachment; filename="+fileName)
+	request.Header.Set("Content-Disposition", "attachment; filename="+videoFileName)
 	request.Header.Set("Content-Type", "application/zip")
 	request.Header.Set("Content-Transfer-Encoding", "binary")
 
@@ -470,14 +440,23 @@ func downloadYTVideo(videoURL string) error {
 
 	if audio {
 		err := saveAudio(outputDirectory, fileName, path)
-		return err
+		if err != nil {
+			return err
+		}
+	}
+
+	if subtitle {
+		err := saveTranscript(outputDirectory, fileName, baseUrl)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
 func saveAudio(outputDirectory, fileName, path string) error {
-	audioFile := filepath.Join(outputDirectory, strings.TrimRight(fileName, filepath.Ext(fileName))+".mp3")
+	audioFile := filepath.Join(outputDirectory, fileName+".mp3")
 
 	info(fmt.Sprintf("Creating a file %s...", audioFile))
 
@@ -500,6 +479,37 @@ func saveAudio(outputDirectory, fileName, path string) error {
 	}
 
 	info(fmt.Sprint("The video audio extracted successfully! :))"))
+	return nil
+}
+
+func saveTranscript(outputDirectory, fileName, baseUrl string) error {
+	if xmlBytes, err := getXML(baseUrl); err != nil {
+		return fmt.Errorf("Gotube: Failed to get XML: %v", err)
+	} else {
+		var result Transcript
+		xml.Unmarshal(xmlBytes, &result)
+
+		transFile := filepath.Join(outputDirectory, fileName+".txt")
+		f, err := os.Create(transFile)
+		if err != nil {
+			return fmt.Errorf("Gotube: Cannot create file %v", err)
+		}
+
+		for _, subtitle := range result.Subtitles {
+			if _, err := io.WriteString(f, html.UnescapeString(subtitle.Text)+"\n"); err != nil {
+				f.Close()
+				return fmt.Errorf("Gotube: Cannot write file %v", err)
+			}
+		}
+
+		err = f.Close()
+		if err != nil {
+			return fmt.Errorf("Gotube: Cannot close file %v", err)
+		} else {
+			info(fmt.Sprint("Subtitle file downloaded successfully!"))
+		}
+	}
+
 	return nil
 }
 
@@ -526,7 +536,7 @@ func download(URLs []string) error {
 
 func main() {
 	flag.Usage = func() {
-		fmt.Println("Usage: gotube [-outdir=<OUT_DIRECTORY>] [-v] [-d] [-a] <YT_VID_URL>\n")
+		fmt.Println("Usage: gotube [-outdir=<OUT_DIRECTORY>] [-v] [-d] [-a] [-s] <YT_VID_URL>\n")
 	}
 
 	var debug bool
@@ -535,6 +545,7 @@ func main() {
 	flag.BoolVar(&verbose, "v", false, "If true, GoTube will display detailed download process")
 	flag.BoolVar(&debug, "d", false, "Turn on debug logging")
 	flag.BoolVar(&audio, "a", false, "If true, GoTube will download video's audio as well")
+	flag.BoolVar(&subtitle, "s", false, "If true, GoTube will extract video's subtitles (auto)")
 
 	flag.Parse()
 	args := flag.Args()
