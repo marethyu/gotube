@@ -38,8 +38,10 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"flag"
 	"fmt"
+	"html"
 	"io"
 	"io/ioutil"
 	"log"
@@ -66,6 +68,17 @@ type WriteCounter struct {
 	TotalBytes      int64
 }
 
+type Subtitle struct {
+	Start    float32 `xml:"start,attr"`
+	Duration float32 `xml:"dur,attr"`
+	Text     string  `xml:",chardata"`
+}
+
+type Transcript struct {
+	XMLName   xml.Name   `xml:"transcript"`
+	Subtitles []Subtitle `xml:"text"`
+}
+
 func displayStatus() {
 	for percent < 100 {
 		fmt.Printf("\rGoTube: Download progress: %%%d complete", percent)
@@ -79,6 +92,55 @@ func (pWc *WriteCounter) Write(b []byte) (n int, err error) {
 	pWc.BytesDownloaded += int64(n)
 	percent = int(math.Round(float64(pWc.BytesDownloaded) * 100.0 / float64(pWc.TotalBytes)))
 	return
+}
+
+func getXML(url string) ([]byte, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return []byte{}, fmt.Errorf("GET error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return []byte{}, fmt.Errorf("Status error: %v", resp.StatusCode)
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return []byte{}, fmt.Errorf("Read body: %v", err)
+	}
+
+	return data, nil
+}
+
+func saveTranscriptAsText(baseUrl, fileName string) error {
+	if xmlBytes, err := getXML(baseUrl); err != nil {
+		return fmt.Errorf("Gotube: Failed to get XML: %v", err)
+	} else {
+		var result Transcript
+		xml.Unmarshal(xmlBytes, &result)
+
+		f, err := os.Create(fileName)
+		if err != nil {
+			return fmt.Errorf("Gotube: Cannot create file %v", err)
+		}
+
+		for _, subtitle := range result.Subtitles {
+			if _, err := io.WriteString(f, html.UnescapeString(subtitle.Text)+"\n"); err != nil {
+				f.Close()
+				return fmt.Errorf("Gotube: Cannot write file %v", err)
+			}
+		}
+
+		err = f.Close()
+		if err != nil {
+			return fmt.Errorf("Gotube: Cannot close file %v", err)
+		} else {
+			info(fmt.Sprint("Subtitle file downloaded successfully!"))
+		}
+	}
+
+	return nil
 }
 
 // Go's version of PHP's parse_str
@@ -295,6 +357,12 @@ func getMetaData(id string) (string, string, error) {
 	// Remove characters like ':' and '?' in the video title
 	re := regexp.MustCompile(`[^A-Za-z0-9.\_\-]`)
 	fileName = re.ReplaceAllString(title+"."+format, "")
+
+	/* XXX */
+	captionsData := videoData["captions"].(map[string]interface{})
+	captionsTracklistRenderer := captionsData["playerCaptionsTracklistRenderer"].(map[string]interface{})
+	baseUrl := captionsTracklistRenderer["captionTracks"].([]interface{})[0].(map[string]interface{})["baseUrl"].(string)
+	saveTranscriptAsText(baseUrl, re.ReplaceAllString(title+".txt", ""))
 
 	return fileName, downloadURL, nil
 }
