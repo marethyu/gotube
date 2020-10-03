@@ -483,33 +483,33 @@ func saveAudio(outputDirectory, fileName, path string) error {
 }
 
 func saveTranscript(outputDirectory, fileName, baseURL string) error {
-	if xmlBytes, err := getXML(baseURL); err != nil {
+	xmlBytes, err := getXML(baseURL)
+	if err != nil {
 		return fmt.Errorf("Gotube: Failed to get XML: %v", err)
-	} else {
-		var result transcript
-		xml.Unmarshal(xmlBytes, &result)
+	}
 
-		transFile := filepath.Join(outputDirectory, fileName+".txt")
-		f, err := os.Create(transFile)
-		if err != nil {
-			return fmt.Errorf("Gotube: Cannot create file %v", err)
-		}
+	var result transcript
+	xml.Unmarshal(xmlBytes, &result)
 
-		for _, subtitle := range result.Subtitles {
-			if _, err := io.WriteString(f, html.UnescapeString(subtitle.Text)+"\n"); err != nil {
-				f.Close()
-				return fmt.Errorf("Gotube: Cannot write file %v", err)
-			}
-		}
+	transFile := filepath.Join(outputDirectory, fileName+".txt")
+	f, err := os.Create(transFile)
+	if err != nil {
+		return fmt.Errorf("Gotube: Cannot create file %v", err)
+	}
 
-		err = f.Close()
-		if err != nil {
-			return fmt.Errorf("Gotube: Cannot close file %v", err)
-		} else {
-			info(fmt.Sprint("Subtitle file downloaded successfully!"))
+	for _, subtitle := range result.Subtitles {
+		if _, err := io.WriteString(f, html.UnescapeString(subtitle.Text)+"\n"); err != nil {
+			f.Close()
+			return fmt.Errorf("Gotube: Cannot write file %v", err)
 		}
 	}
 
+	err = f.Close()
+	if err != nil {
+		return fmt.Errorf("Gotube: Cannot close file %v", err)
+	}
+
+	info(fmt.Sprint("Subtitle file downloaded successfully!"))
 	return nil
 }
 
