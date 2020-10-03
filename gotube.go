@@ -61,7 +61,7 @@ var verbose bool
 var audio bool
 var outputDirectory string
 
-type writeCounter struct {
+type WriteCounter struct {
 	BytesDownloaded int64
 	TotalBytes      int64
 }
@@ -74,7 +74,7 @@ func displayStatus() {
 	fmt.Println("\rGoTube: Download progress: %100 complete")
 }
 
-func (pWc *writeCounter) Write(b []byte) (n int, err error) {
+func (pWc *WriteCounter) Write(b []byte) (n int, err error) {
 	n = len(b)
 	pWc.BytesDownloaded += int64(n)
 	percent = int(math.Round(float64(pWc.BytesDownloaded) * 100.0 / float64(pWc.TotalBytes)))
@@ -390,7 +390,7 @@ func downloadYTVideo(videoURL string) error {
 		body = resp.Body
 	} else {
 		go displayStatus()
-		body = io.TeeReader(resp.Body, &writeCounter{0, videoSize}) // Pipe stream
+		body = io.TeeReader(resp.Body, &WriteCounter{0, videoSize}) // Pipe stream
 	}
 
 	_, err = io.Copy(output, body)
