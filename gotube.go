@@ -460,6 +460,11 @@ func main() {
 	flag.Usage = func() {
 		fmt.Println("Usage: gotube [-outdir=<OUT_DIRECTORY>] [-v] [-d] [-a] <YT_VID_URL>\n")
 	}
+	
+	// if there is no argument then shows the usage
+	if (len(os.Args) == 1) {
+		flag.Usage()
+	} 
 
 	var debug bool
 
@@ -470,7 +475,7 @@ func main() {
 
 	flag.Parse()
 	args := flag.Args()
-
+	
 	if debug {
 		log.SetPrefix("\n")
 	} else {
