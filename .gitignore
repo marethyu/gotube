@@ -2,3 +2,5 @@ gotube.exe
 *.mp4
 *.txt
 *.mp3
+.idea/*
+.git
